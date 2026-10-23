@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage
+  SchemaVersion="1.0"
+  AutodeskProduct="AutoCAD"
+  Name="CADLookup"
+  Description="Inspect and search drawing object properties."
+  AppVersion="0.2.0"
+  ProductCode="{B93B421F-6537-4D52-9FF2-EB08ED55E521}"
+  UpgradeCode="{EC49CC15-5A6C-48D4-BC0C-2A97F1195CC2}"
+  Author="CADLookup">
+  <CompanyDetails Name="CADLookup" />
+  <Components Description="AutoCAD 2023 managed plug-in">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R24.2" SeriesMax="R24.2" />
+    <ComponentEntry AppName="CADLookup" AppDescription="CAD object inspector" AppType=".Net" ModuleName="./Contents/Windows/CADLookup.Host.AutoCAD.dll" LoadOnCommandInvocation="True">
+      <Commands GroupName="CADLOOKUP">
+        <Command Global="CADLOOKUP" Local="CADLOOKUP" />
+        <Command Global="CADLOOKUPSELECT" Local="CADLOOKUPSELECT" />
+        <Command Global="CADLOOKUPREFRESH" Local="CADLOOKUPREFRESH" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+</ApplicationPackage>
