@@ -52,6 +52,11 @@
                 <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
             </Style>
 
+            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
+
             <Style x:Key="CaptionStyle" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                 <Setter Property="FontSize" Value="11" />
@@ -175,7 +180,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <ComboBox ItemsSource="{Binding GroupByOptions}" SelectedItem="{Binding SelectedGroupBy}" Height="30" VerticalContentAlignment="Center" ToolTip="{Binding Localization[GroupBy]}" />
+                            <ComboBox ItemsSource="{Binding GroupByOptions}" SelectedItem="{Binding SelectedGroupBy, UpdateSourceTrigger=PropertyChanged}" Height="30" VerticalContentAlignment="Center" ToolTip="{Binding Localization[GroupBy]}" />
                             <hc:ButtonGroup Grid.Column="1" Margin="6,0,0,0">
                                 <Button Command="{Binding ExpandAllTreeCommand}" Content="+" Style="{StaticResource ButtonDefault}" Padding="8,2" ToolTip="{Binding Localization[ExpandAll]}" FontSize="11" />
                                 <Button Command="{Binding CollapseAllTreeCommand}" Content="-" Style="{StaticResource ButtonDefault}" Padding="8,2" ToolTip="{Binding Localization[CollapseAll]}" FontSize="11" />
@@ -229,8 +234,9 @@
                             </HierarchicalDataTemplate>
                         </TreeView.Resources>
                         <TreeView.ItemContainerStyle>
-                            <Style TargetType="{x:Type TreeViewItem}">
+                            <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                                 <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                                 <Setter Property="Padding" Value="1" />
                             </Style>
                         </TreeView.ItemContainerStyle>
@@ -268,7 +274,7 @@
                                     <TextBlock Text="{Binding SelectedHandle}" Foreground="{DynamicResource TagTextBrush}" FontFamily="Consolas" FontSize="11" FontWeight="Bold" />
                                 </Border>
                                 <Border Background="{DynamicResource CardSubtleBgBrush}" BorderBrush="{DynamicResource CardSubtleBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8,3" Margin="0,0,6,0">
-                                    <TextBlock Text="{Binding SelectedType}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="340" />
+                                    <TextBlock Text="{Binding SelectedTypeName}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="340" />
                                 </Border>
                                 <Border CornerRadius="5" Padding="8,3">
                                     <Border.Style>
@@ -297,7 +303,7 @@
                             </StackPanel>
 
                             <!-- Drawing, ObjectId, Path Metadata Grid -->
-                            <Grid>
+                            <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="30" />
@@ -308,28 +314,28 @@
 
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="{Binding Localization[Document]}" Style="{StaticResource CaptionStyle}" />
-                                    <TextBlock Text="{Binding ActiveDrawing}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,2,0,0" />
+                                    <TextBlock Text="{Binding SelectedDocumentId}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="220" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="{Binding Localization[ObjectId]}" Style="{StaticResource CaptionStyle}" />
-                                    <TextBlock Text="{Binding SelectedObjectId}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas" Margin="0,2,0,0" />
+                                    <TextBlock Text="{Binding SelectedNativeId}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="180" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="4">
                                     <TextBlock Text="{Binding Localization[Path]}" Style="{StaticResource CaptionStyle}" />
-                                    <TextBlock Text="{Binding MemberPathText}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding SelectedReferencePath}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </Grid>
 
                             <!-- Navigation & Breadcrumb -->
-                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0" VerticalAlignment="Center">
                                 <hc:ButtonGroup Margin="0,0,8,0">
                                     <Button Command="{Binding BackCommand}" Content="&lt;" Style="{StaticResource ButtonDefault}" ToolTip="{Binding Localization[Back]}" Padding="10,4" />
                                     <Button Command="{Binding ForwardCommand}" Content="&gt;" Style="{StaticResource ButtonDefault}" ToolTip="{Binding Localization[Forward]}" Padding="10,4" />
                                 </hc:ButtonGroup>
                                 <Border Background="{DynamicResource CardSubtleBgBrush}" BorderBrush="{DynamicResource CardSubtleBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding ObjectBreadcrumb}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" FontFamily="Consolas" />
+                                    <TextBlock Text="{Binding SelectedReferencePath}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" FontFamily="Consolas" />
                                 </Border>
                             </StackPanel>
                         </StackPanel>
@@ -366,10 +372,10 @@
 
                             <!-- Filters: Source Group, Status, and SearchBarPlus -->
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <ComboBox ItemsSource="{Binding PropertySources}" SelectedItem="{Binding SelectedPropertySource}" Width="140" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" ToolTip="Lọc theo nhóm thuộc tính" />
-                                <ComboBox ItemsSource="{Binding PropertyStatuses}" SelectedItem="{Binding SelectedPropertyStatus}" Width="130" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" ToolTip="Lọc theo trạng thái đọc" />
+                                <ComboBox ItemsSource="{Binding PropertySources}" SelectedItem="{Binding SelectedPropertySource, UpdateSourceTrigger=PropertyChanged}" Width="150" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" ToolTip="Lọc theo nhóm thuộc tính" />
+                                <ComboBox ItemsSource="{Binding StatusFilterOptions}" SelectedItem="{Binding SelectedStatusFilter, UpdateSourceTrigger=PropertyChanged}" Width="140" Height="30" VerticalContentAlignment="Center" Margin="0,0,6,0" ToolTip="Lọc theo trạng thái đọc" />
                                 <hc:SearchBar Width="180" Height="30"
-                                              Text="{Binding PropertyFilter, UpdateSourceTrigger=PropertyChanged}"
+                                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                               Style="{StaticResource SearchBarPlus}"
                                               ToolTip="{Binding Localization[Search]}"
                                               hc:InfoElement.Placeholder="{Binding Localization[Search]}"
@@ -382,7 +388,7 @@
                             <!-- Tab 1: Properties Table -->
                             <TabItem Header="{Binding Localization[Properties]}">
                                 <Grid Margin="0,8,0,0">
-                                    <DataGrid ItemsSource="{Binding FilteredProperties}" SelectedItem="{Binding SelectedProperty}" MouseDoubleClick="PropertyDoubleClick">
+                                    <DataGrid ItemsSource="{Binding Properties}" SelectedItem="{Binding SelectedProperty}" MouseDoubleClick="PropertyDoubleClick">
                                         <DataGrid.Columns>
                                             <DataGridTextColumn Header="{Binding Data.Localization[Name], Source={StaticResource ViewModelProxy}}" Binding="{Binding Name}" Width="1.4*">
                                                 <DataGridTextColumn.ElementStyle>

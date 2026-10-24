@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -19,9 +20,20 @@ namespace CADLookup.UI.Views
 
         private void ObjectTreeSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (DataContext is MainViewModel vm && e.NewValue is ObjectTreeNode node && node.Reference != null)
+            if (DataContext is MainViewModel vm && e.NewValue is ObjectTreeNode node)
             {
-                vm.RequestSelectObject(node.Reference);
+                if (node.Reference != null)
+                {
+                    vm.RequestSelectObject(node.Reference);
+                }
+                else if (node.Children.Count > 0)
+                {
+                    var firstChild = node.Children.FirstOrDefault(c => c.Reference != null);
+                    if (firstChild?.Reference != null)
+                    {
+                        vm.RequestSelectObject(firstChild.Reference);
+                    }
+                }
             }
         }
 

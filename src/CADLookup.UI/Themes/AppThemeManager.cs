@@ -48,21 +48,31 @@ namespace CADLookup.UI.Themes
 
         public static void ApplyBrushes(ResourceDictionary dict, bool isDark)
         {
+            var textPrimary = new SolidColorBrush(isDark ? Color.FromRgb(0xF1, 0xF5, 0xF9) : Color.FromRgb(0x1F, 0x2D, 0x42));
+            var textSecondary = new SolidColorBrush(isDark ? Color.FromRgb(0x94, 0xA3, 0xB8) : Color.FromRgb(0x72, 0x80, 0x96));
+            var bgBrush = new SolidColorBrush(isDark ? Color.FromRgb(0x1D, 0x22, 0x2D) : Color.FromRgb(0xFF, 0xFF, 0xFF));
+            var borderBrush = new SolidColorBrush(isDark ? Color.FromRgb(0x2E, 0x37, 0x47) : Color.FromRgb(0xE2, 0xE8, 0xF0));
+
             dict["AppBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x13, 0x16, 0x1E) : Color.FromRgb(0xF4, 0xF6, 0xFA));
-            dict["CardBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x1D, 0x22, 0x2D) : Color.FromRgb(0xFF, 0xFF, 0xFF));
-            dict["CardBorderBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x2E, 0x37, 0x47) : Color.FromRgb(0xE5, 0xEA, 0xF1));
+            dict["CardBgBrush"] = bgBrush;
+            dict["CardBorderBrush"] = borderBrush;
             dict["CardSubtleBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x23, 0x29, 0x36) : Color.FromRgb(0xFB, 0xFC, 0xFE));
             dict["CardSubtleBorderBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x31, 0x3B, 0x4D) : Color.FromRgb(0xED, 0xF0, 0xF5));
-            dict["TextPrimaryBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0xF1, 0xF5, 0xF9) : Color.FromRgb(0x1F, 0x2D, 0x42));
-            dict["TextSecondaryBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x94, 0xA3, 0xB8) : Color.FromRgb(0x72, 0x80, 0x96));
+            dict["TextPrimaryBrush"] = textPrimary;
+            dict["TextSecondaryBrush"] = textSecondary;
             dict["HeaderBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x0F, 0x12, 0x1A) : Color.FromRgb(0x17, 0x24, 0x3A));
             dict["AccentBrush"] = new SolidColorBrush(Color.FromRgb(0x28, 0x64, 0xD7));
-            dict["DataGridBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x1D, 0x22, 0x2D) : Color.FromRgb(0xFF, 0xFF, 0xFF));
-            dict["DataGridRowBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x1D, 0x22, 0x2D) : Color.FromRgb(0xFF, 0xFF, 0xFF));
+            dict["DataGridBgBrush"] = bgBrush;
+            dict["DataGridRowBgBrush"] = bgBrush;
             dict["DataGridAltRowBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x18, 0x1D, 0x26) : Color.FromRgb(0xF8, 0xFA, 0xFD));
-            dict["DataGridGridLinesBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x2B, 0x34, 0x44) : Color.FromRgb(0xEA, 0xEF, 0xF5));
+            dict["DataGridGridLinesBrush"] = borderBrush;
             dict["TagBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x2A, 0x33, 0x46) : Color.FromRgb(0xEA, 0xF1, 0xFF));
             dict["TagTextBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x60, 0xA5, 0xFA) : Color.FromRgb(0x27, 0x5A, 0xB5));
+
+            // Set HandyControl text and control brushes
+            dict["PrimaryTextBrush"] = textPrimary;
+            dict["SecondaryTextBrush"] = textSecondary;
+            dict["TextIconBrush"] = textSecondary;
         }
     }
 }
