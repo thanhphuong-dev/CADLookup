@@ -60,7 +60,9 @@ namespace CADLookup.UI.Themes
             dict["CardSubtleBorderBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x31, 0x3B, 0x4D) : Color.FromRgb(0xED, 0xF0, 0xF5));
             dict["TextPrimaryBrush"] = textPrimary;
             dict["TextSecondaryBrush"] = textSecondary;
-            dict["HeaderBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x0F, 0x12, 0x1A) : Color.FromRgb(0x17, 0x24, 0x3A));
+            // Clean integrated header (white in light mode, dark in dark mode - NO PURPLE)
+            dict["HeaderBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x16, 0x19, 0x22) : Color.FromRgb(0xFF, 0xFF, 0xFF));
+            dict["HeaderBorderBrush"] = borderBrush;
             dict["AccentBrush"] = new SolidColorBrush(Color.FromRgb(0x28, 0x64, 0xD7));
             dict["DataGridBgBrush"] = bgBrush;
             dict["DataGridRowBgBrush"] = bgBrush;
@@ -69,10 +71,12 @@ namespace CADLookup.UI.Themes
             dict["TagBgBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x2A, 0x33, 0x46) : Color.FromRgb(0xEA, 0xF1, 0xFF));
             dict["TagTextBrush"] = new SolidColorBrush(isDark ? Color.FromRgb(0x60, 0xA5, 0xFA) : Color.FromRgb(0x27, 0x5A, 0xB5));
 
-            // Set HandyControl text and control brushes
+            // HandyControl core brushes
             dict["PrimaryTextBrush"] = textPrimary;
             dict["SecondaryTextBrush"] = textSecondary;
             dict["TextIconBrush"] = textSecondary;
+            dict["RegionBrush"] = bgBrush;
+            dict["BorderBrush"] = borderBrush;
         }
     }
 }

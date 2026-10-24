@@ -25,7 +25,8 @@
             <SolidColorBrush x:Key="CardSubtleBorderBrush" Color="#FFE2E8F0" />
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FF1E293B" />
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF64748B" />
-            <SolidColorBrush x:Key="HeaderBgBrush" Color="#FF0F172A" />
+            <SolidColorBrush x:Key="HeaderBgBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="HeaderBorderBrush" Color="#FFE2E8F0" />
             <SolidColorBrush x:Key="AccentBrush" Color="#FF2563EB" />
             <SolidColorBrush x:Key="DataGridBgBrush" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="DataGridRowBgBrush" Color="#FFFFFFFF" />
@@ -34,27 +35,25 @@
             <SolidColorBrush x:Key="TagBgBrush" Color="#FFEFF6FF" />
             <SolidColorBrush x:Key="TagTextBrush" Color="#FF1D4ED8" />
 
-            <Style TargetType="DataGrid">
+            <!-- Default DataGrid Style: BASED ON HandyControl default DataGrid -->
+            <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
                 <Setter Property="AutoGenerateColumns" Value="False" />
                 <Setter Property="CanUserAddRows" Value="False" />
                 <Setter Property="IsReadOnly" Value="True" />
-                <Setter Property="GridLinesVisibility" Value="Horizontal" />
                 <Setter Property="HeadersVisibility" Value="Column" />
-                <Setter Property="RowHeight" Value="36" />
-                <Setter Property="ColumnHeaderHeight" Value="38" />
+                <Setter Property="GridLinesVisibility" Value="Horizontal" />
+                <Setter Property="RowHeight" Value="34" />
+                <Setter Property="ColumnHeaderHeight" Value="36" />
                 <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="Background" Value="{DynamicResource DataGridBgBrush}" />
-                <Setter Property="RowBackground" Value="{DynamicResource DataGridRowBgBrush}" />
-                <Setter Property="AlternatingRowBackground" Value="{DynamicResource DataGridAltRowBgBrush}" />
-                <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource DataGridGridLinesBrush}" />
                 <Setter Property="EnableRowVirtualization" Value="True" />
                 <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
                 <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
             </Style>
 
+            <!-- Default ComboBox Style: BASED ON HandyControl default ComboBox -->
             <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
-                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                 <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             </Style>
 
             <Style x:Key="CaptionStyle" TargetType="TextBlock">
@@ -66,8 +65,8 @@
     </UserControl.Resources>
 
     <DockPanel LastChildFill="True">
-        <!-- Top Application Header Bar -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource HeaderBgBrush}" Padding="16,10">
+        <!-- Top Toolbar Header (Clean, Light/Dark integrated, NO PURPLE) -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource HeaderBgBrush}" BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -76,38 +75,33 @@
 
                 <!-- Branding & Active Drawing Info -->
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="38" Height="38" CornerRadius="10" Background="{DynamicResource AccentBrush}" Margin="0,0,12,0">
-                        <TextBlock Text="C" Foreground="White" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border Width="32" Height="32" CornerRadius="8" Background="{DynamicResource AccentBrush}" Margin="0,0,10,0">
+                        <TextBlock Text="C" Foreground="White" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <StackPanel VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="CADLookup" Foreground="White" FontSize="18" FontWeight="Bold" />
-                            <Border Background="#3338BDF8" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="PRO" Foreground="#FF38BDF8" FontSize="10" FontWeight="Bold" />
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="{Binding HostName}" Foreground="#FF94A3B8" FontSize="11" ToolTip="{Binding HostCapabilities}" />
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,14,0">
+                        <TextBlock Text="CADLookup" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" FontWeight="Bold" />
+                        <TextBlock Text="{Binding HostName}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" />
                     </StackPanel>
-                    <Border Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="18,0,0,0" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource CardSubtleBgBrush}" BorderBrush="{DynamicResource CardSubtleBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,4" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="📄 " FontSize="11" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding DocumentName}" Foreground="#FFE2E8F0" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                            <TextBlock Text="{Binding DocumentName}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="320" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
 
-                <!-- Action Controls & Header Tools (Using HandyControl controls & styles) -->
+                <!-- Action Controls (Using HandyControl standard styles) -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="{Binding Localization[Select]}" Command="{Binding SelectCommand}"
-                            Style="{StaticResource ButtonPrimary}" Margin="3,0" Height="32" Padding="14,0" />
+                            Style="{StaticResource ButtonPrimary}" Margin="3,0" Height="30" Padding="12,0" />
                     <Button Content="{Binding Localization[SnoopDatabase]}" Command="{Binding SnoopDatabaseCommand}"
-                            Style="{StaticResource ButtonSuccess}" Margin="3,0" Height="32" Padding="14,0"
+                            Style="{StaticResource ButtonSuccess}" Margin="3,0" Height="30" Padding="12,0"
                             ToolTip="{Binding Localization[SnoopDatabaseHint]}" />
                     <Button Content="{Binding Localization[Refresh]}" Command="{Binding RefreshCommand}"
-                            Style="{StaticResource ButtonDefault}" Margin="3,0" Height="32" Padding="12,0" />
+                            Style="{StaticResource ButtonDefault}" Margin="3,0" Height="30" Padding="10,0" />
 
                     <!-- Quick Handle Lookup SearchBar -->
-                    <hc:SearchBar Width="160" Height="32" Margin="6,0,4,0"
+                    <hc:SearchBar Width="150" Height="30" Margin="6,0,4,0"
                                   Text="{Binding HandleQuery, UpdateSourceTrigger=PropertyChanged}"
                                   Style="{StaticResource SearchBarPlus}"
                                   ToolTip="{Binding Localization[HandlePlaceholder]}"
@@ -117,41 +111,28 @@
 
                     <!-- Theme Toggle Button -->
                     <Button Command="{Binding ToggleThemeCommand}" Style="{StaticResource ButtonDefault}"
-                            Height="32" Margin="3,0" MinWidth="60" ToolTip="{Binding Localization[Theme]}">
+                            Height="30" Margin="3,0" MinWidth="54" ToolTip="{Binding Localization[Theme]}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding ThemeIcon}" Margin="0,0,4,0" FontSize="13" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ThemeIcon}" Margin="0,0,4,0" FontSize="12" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding ThemeText}" FontSize="11" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
                     <!-- Language Toggle Button -->
                     <Button Command="{Binding LanguageCommand}" Style="{StaticResource ButtonDefault}"
-                            Height="32" Margin="3,0" MinWidth="48" ToolTip="Switch Language (VI/EN)">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🌐 " FontSize="11" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Language}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        </StackPanel>
+                            Height="30" Margin="3,0" MinWidth="44" ToolTip="Switch Language (VI/EN)">
+                        <TextBlock Text="{Binding Language}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </Button>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Bottom Status Bar -->
-        <Border DockPanel.Dock="Bottom" Background="{DynamicResource CardBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="14,7">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="CADLookup" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold" />
-                    <TextBlock Text=" ∷ Advanced Object Inspector" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
-                </StackPanel>
-            </Grid>
+        <!-- Bottom Status Bar (Clean, no duplicate CADLookup branding) -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource CardBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="14,6">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource AccentBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
         </Border>
 
         <!-- Main Content Area -->
@@ -169,7 +150,7 @@
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                         <!-- Header with Object Count Badge -->
                         <Grid Margin="0,0,0,4">
-                            <TextBlock Text="{Binding Localization[Objects]}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Localization[Objects]}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                             <hc:Badge HorizontalAlignment="Right" Value="{Binding VisibleObjects.Count}" Style="{StaticResource BadgePrimary}" ShowBadge="True" />
                         </Grid>
                         <TextBlock Text="{Binding Localization[SelectObjectHint]}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,0,0,8" />
@@ -188,7 +169,7 @@
                         </Grid>
 
                         <!-- Filter SearchBar using HandyControl SearchBarPlus -->
-                        <hc:SearchBar Height="32"
+                        <hc:SearchBar Height="30"
                                       Text="{Binding ObjectFilter, UpdateSourceTrigger=PropertyChanged}"
                                       Style="{StaticResource SearchBarPlus}"
                                       ToolTip="{Binding Localization[FilterObjects]}"
@@ -255,28 +236,29 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- Target Object Summary in HandyControl Card -->
+                <!-- Target Object Summary in HandyControl Card (CLEAN, NO REDUNDANCY) -->
                 <hc:Card Grid.Row="0" Effect="{StaticResource EffectShadow2}"
                          Background="{DynamicResource CardBgBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                    <Grid Margin="16,14">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                    <Grid Margin="16,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                        <StackPanel>
-                            <TextBlock Text="{Binding Localization[Inspector]}" Style="{StaticResource CaptionStyle}" />
-                            <TextBlock Text="{Binding ObjectSummary}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,8" TextTrimming="CharacterEllipsis" />
+                        <!-- Row 0: Object Type & Actions -->
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                            <!-- Object Attributes Badges / Pills -->
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <Border Background="{DynamicResource TagBgBrush}" CornerRadius="5" Padding="8,3" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding SelectedTypeName}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="380" />
+                                <Border Background="{DynamicResource TagBgBrush}" CornerRadius="4" Padding="7,2" Margin="10,0,6,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding SelectedHandle}" Foreground="{DynamicResource TagTextBrush}" FontFamily="Consolas" FontSize="11" FontWeight="Bold" />
                                 </Border>
-                                <Border Background="{DynamicResource CardSubtleBgBrush}" BorderBrush="{DynamicResource CardSubtleBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="8,3" Margin="0,0,6,0">
-                                    <TextBlock Text="{Binding SelectedTypeName}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="340" />
-                                </Border>
-                                <Border CornerRadius="5" Padding="8,3">
+                                <Border CornerRadius="4" Padding="7,2" VerticalAlignment="Center">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="#1510B981" />
@@ -302,50 +284,52 @@
                                 </Border>
                             </StackPanel>
 
-                            <!-- Drawing, ObjectId, Path Metadata Grid -->
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="30" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="30" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="{Binding Localization[Document]}" Style="{StaticResource CaptionStyle}" />
-                                    <TextBlock Text="{Binding SelectedDocumentId}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="220" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="{Binding Localization[ObjectId]}" Style="{StaticResource CaptionStyle}" />
-                                    <TextBlock Text="{Binding SelectedNativeId}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontFamily="Consolas" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="180" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="4">
-                                    <TextBlock Text="{Binding Localization[Path]}" Style="{StaticResource CaptionStyle}" />
-                                    <TextBlock Text="{Binding SelectedReferencePath}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                            </Grid>
-
-                            <!-- Navigation & Breadcrumb -->
-                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0" VerticalAlignment="Center">
-                                <hc:ButtonGroup Margin="0,0,8,0">
-                                    <Button Command="{Binding BackCommand}" Content="&lt;" Style="{StaticResource ButtonDefault}" ToolTip="{Binding Localization[Back]}" Padding="10,4" />
-                                    <Button Command="{Binding ForwardCommand}" Content="&gt;" Style="{StaticResource ButtonDefault}" ToolTip="{Binding Localization[Forward]}" Padding="10,4" />
-                                </hc:ButtonGroup>
-                                <Border Background="{DynamicResource CardSubtleBgBrush}" BorderBrush="{DynamicResource CardSubtleBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding SelectedReferencePath}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" FontFamily="Consolas" />
-                                </Border>
+                            <!-- Action buttons -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="{Binding Localization[Copy]}" Command="{Binding CopyCommand}" Style="{StaticResource ButtonDefault}" Height="30" Padding="10,0" Margin="3,0" />
+                                <Button Content="{Binding Localization[CopyPath]}" Command="{Binding CopyPathCommand}" Style="{StaticResource ButtonDefault}" Height="30" Padding="10,0" Margin="3,0" />
+                                <Button Content="{Binding Localization[Export]}" Command="{Binding ExportCommand}" Style="{StaticResource ButtonPrimary}" Height="30" Padding="12,0" Margin="3,0" />
                             </StackPanel>
-                        </StackPanel>
+                        </Grid>
 
-                        <!-- Action Buttons (Using HandyControl styles) -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                            <Button Content="{Binding Localization[Copy]}" Command="{Binding CopyCommand}" Style="{StaticResource ButtonDefault}" Margin="3,0" Height="32" Padding="12,0" />
-                            <Button Content="{Binding Localization[CopyPath]}" Command="{Binding CopyPathCommand}" Style="{StaticResource ButtonDefault}" Margin="3,0" Height="32" Padding="12,0" />
-                            <Button Content="{Binding Localization[Export]}" Command="{Binding ExportCommand}" Style="{StaticResource ButtonPrimary}" Margin="3,0" Height="32" Padding="14,0" />
-                        </StackPanel>
+                        <!-- Divider line -->
+                        <Border Grid.Row="1" Height="1" Background="{DynamicResource CardSubtleBorderBrush}" Margin="0,10,0,10" />
+
+                        <!-- Row 2: Metadata & History Navigation in a clean horizontal strip -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="28" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="28" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Drawing -->
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{Binding Localization[Document]}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SelectedDocumentId}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="220" />
+                            </StackPanel>
+
+                            <!-- ObjectId -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{Binding Localization[ObjectId]}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SelectedNativeId}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontFamily="Consolas" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="180" />
+                            </StackPanel>
+
+                            <!-- MemberPath -->
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="{Binding Localization[Path]}" Style="{StaticResource CaptionStyle}" />
+                                <TextBlock Text="{Binding SelectedReferencePath}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <!-- History Navigation < > -->
+                            <hc:ButtonGroup Grid.Column="5" VerticalAlignment="Center" Margin="10,0,0,0">
+                                <Button Command="{Binding BackCommand}" Content="&lt;" Style="{StaticResource ButtonDefault}" ToolTip="{Binding Localization[Back]}" Padding="9,3" Height="28" />
+                                <Button Command="{Binding ForwardCommand}" Content="&gt;" Style="{StaticResource ButtonDefault}" ToolTip="{Binding Localization[Forward]}" Padding="9,3" Height="28" />
+                            </hc:ButtonGroup>
+                        </Grid>
                     </Grid>
                 </hc:Card>
 
@@ -385,10 +369,13 @@
 
                         <!-- TabControl styled with HandyControl TabControlCapsule -->
                         <TabControl Style="{StaticResource TabControlCapsule}" Margin="0,6,0,0">
-                            <!-- Tab 1: Properties Table -->
+                            <!-- Tab 1: Properties Table (Using HandyControl Default DataGrid Style) -->
                             <TabItem Header="{Binding Localization[Properties]}">
                                 <Grid Margin="0,8,0,0">
-                                    <DataGrid ItemsSource="{Binding Properties}" SelectedItem="{Binding SelectedProperty}" MouseDoubleClick="PropertyDoubleClick">
+                                    <DataGrid Style="{StaticResource {x:Type DataGrid}}"
+                                              ItemsSource="{Binding Properties}"
+                                              SelectedItem="{Binding SelectedProperty}"
+                                              MouseDoubleClick="PropertyDoubleClick">
                                         <DataGrid.Columns>
                                             <DataGridTextColumn Header="{Binding Data.Localization[Name], Source={StaticResource ViewModelProxy}}" Binding="{Binding Name}" Width="1.4*">
                                                 <DataGridTextColumn.ElementStyle>
@@ -496,9 +483,10 @@
                                 </Grid>
                             </TabItem>
 
-                            <!-- Tab 2: Geometry Summary -->
+                            <!-- Tab 2: Geometry Summary (Using HandyControl Default DataGrid Style) -->
                             <TabItem Header="{Binding Localization[Geometry]}">
-                                <DataGrid ItemsSource="{Binding Geometry}" Margin="0,8,0,0">
+                                <DataGrid Style="{StaticResource {x:Type DataGrid}}"
+                                          ItemsSource="{Binding Geometry}" Margin="0,8,0,0">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="{Binding Data.Localization[GeometryKind], Source={StaticResource ViewModelProxy}}" Binding="{Binding Kind}" Width="1*">
                                             <DataGridTextColumn.ElementStyle>
