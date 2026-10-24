@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CADLookup.Core.Contracts
 {
@@ -18,6 +18,7 @@ namespace CADLookup.Core.Contracts
         ModelessInspector = 1 << 9,
         JsonExport = 1 << 10,
         TextInspection = 1 << 11,
-        BlockAttributeInspection = 1 << 12
+        BlockAttributeInspection = 1 << 12,
+        DatabaseSnoop = 1 << 13
     }
 }

@@ -12,27 +12,72 @@ namespace CADLookup.Infrastructure.Configuration
 
         public static string LoadLanguage()
         {
-            try
-            {
-                if (!File.Exists(SettingsPath)) return "vi";
-                using (var stream = File.OpenRead(SettingsPath))
-                {
-                    var data = (SettingsData?)new DataContractJsonSerializer(typeof(SettingsData)).ReadObject(stream);
-                    return data?.SchemaVersion == 1 && (data.Language == "vi" || data.Language == "en") ? data.Language : "vi";
-                }
-            }
-            catch { return "vi"; }
+            return ReadSettings().Language;
         }
 
         public static void SaveLanguage(string language)
+        {
+            var settings = ReadSettings();
+            settings.Language = language == "en" ? "en" : "vi";
+            WriteSettings(settings);
+        }
+
+        public static string LoadTheme()
+        {
+            return ReadSettings().Theme;
+        }
+
+        public static void SaveTheme(string theme)
+        {
+            var settings = ReadSettings();
+            settings.Theme = string.Equals(theme, "Dark", StringComparison.OrdinalIgnoreCase) ? "Dark" : "Light";
+            WriteSettings(settings);
+        }
+
+        public static string LoadGroupBy()
+        {
+            return ReadSettings().GroupBy;
+        }
+
+        public static void SaveGroupBy(string groupBy)
+        {
+            var settings = ReadSettings();
+            settings.GroupBy = groupBy;
+            WriteSettings(settings);
+        }
+
+        private static SettingsData ReadSettings()
+        {
+            try
+            {
+                if (!File.Exists(SettingsPath)) return new SettingsData();
+                using (var stream = File.OpenRead(SettingsPath))
+                {
+                    var data = (SettingsData?)new DataContractJsonSerializer(typeof(SettingsData)).ReadObject(stream);
+                    if (data != null)
+                    {
+                        if (data.Language != "en" && data.Language != "vi") data.Language = "vi";
+                        if (data.Theme != "Dark" && data.Theme != "Light") data.Theme = "Light";
+                        if (string.IsNullOrEmpty(data.GroupBy)) data.GroupBy = "Type";
+                        return data;
+                    }
+                }
+            }
+            catch { }
+            return new SettingsData();
+        }
+
+        private static void WriteSettings(SettingsData data)
         {
             try
             {
                 var directory = Path.GetDirectoryName(SettingsPath);
                 if (directory != null) Directory.CreateDirectory(directory);
                 using (var stream = File.Create(SettingsPath))
-                    new DataContractJsonSerializer(typeof(SettingsData)).WriteObject(stream,
-                        new SettingsData { SchemaVersion = 1, Language = language == "en" ? "en" : "vi" });
+                {
+                    data.SchemaVersion = 1;
+                    new DataContractJsonSerializer(typeof(SettingsData)).WriteObject(stream, data);
+                }
             }
             catch
             {
@@ -43,8 +88,10 @@ namespace CADLookup.Infrastructure.Configuration
         [DataContract]
         private sealed class SettingsData
         {
-            [DataMember(Order = 1)] public int SchemaVersion { get; set; }
+            [DataMember(Order = 1)] public int SchemaVersion { get; set; } = 1;
             [DataMember(Order = 2)] public string Language { get; set; } = "vi";
+            [DataMember(Order = 3)] public string Theme { get; set; } = "Light";
+            [DataMember(Order = 4)] public string GroupBy { get; set; } = "Type";
         }
     }
 }

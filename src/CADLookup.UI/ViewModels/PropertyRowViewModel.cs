@@ -13,6 +13,10 @@ namespace CADLookup.UI.ViewModels
             Status = localization.LocalizeStatus(property.Status.ToString());
             Reference = property.Reference;
             ReferencePath = property.Reference == null ? string.Empty : property.Reference.MemberPath;
+            RawStatus = property.Status;
+            IsDeferred = property.Status == PropertyStatus.NotEvaluated;
+            IsError = property.Status == PropertyStatus.EvaluationError || property.Status == PropertyStatus.CyclicReference;
+            HasReference = property.Reference != null;
         }
         public string Name { get; }
         public string Type { get; }
@@ -21,5 +25,9 @@ namespace CADLookup.UI.ViewModels
         public string Status { get; }
         public CADLookup.Core.Contracts.CadObjectRef? Reference { get; }
         public string ReferencePath { get; }
+        public PropertyStatus RawStatus { get; }
+        public bool IsDeferred { get; }
+        public bool IsError { get; }
+        public bool HasReference { get; }
     }
 }

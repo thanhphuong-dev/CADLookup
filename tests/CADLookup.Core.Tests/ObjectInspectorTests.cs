@@ -1,4 +1,4 @@
-using CADLookup.Core.Application;
+﻿using CADLookup.Core.Application;
 using CADLookup.Core.Contracts;
 using CADLookup.Core.Domain;
 using Xunit;
@@ -153,6 +153,7 @@ public sealed class ObjectInspectorTests
         public CadDocumentInfo GetActiveDocument() => new("sample.dwg", "sample.dwg", "sample.dwg");
         public IReadOnlyList<CadObjectRef> SelectObjects(SelectionRequest request) => new[] { Reference };
         public CadObjectRef? FindObjectByHandle(string handle) => Reference;
+        public IReadOnlyList<CadObjectRef> SnoopDatabase() => new[] { Reference };
         public CadObjectSnapshot ReadObject(CadObjectRef objectRef, ReadOptions options)
         {
             LastOptions = options;
@@ -160,3 +161,4 @@ public sealed class ObjectInspectorTests
         }
     }
 }
+

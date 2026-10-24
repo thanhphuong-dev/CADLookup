@@ -18,7 +18,7 @@ namespace CADLookup.Host.AutoCAD
             CadHostCapabilities.GeometrySummary | CadHostCapabilities.ExtendedData | CadHostCapabilities.ReflectedProperties |
             CadHostCapabilities.MethodCatalog | CadHostCapabilities.EventCatalog |
             CadHostCapabilities.RelationshipNavigation | CadHostCapabilities.ModelessInspector | CadHostCapabilities.JsonExport |
-            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection);
+            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection | CadHostCapabilities.DatabaseSnoop);
         private Document ActiveDocument => AcadApp.DocumentManager.MdiActiveDocument ?? throw new InvalidOperationException("No active drawing.");
 
         public CadDocumentInfo? GetActiveDocument()
@@ -31,11 +31,25 @@ namespace CADLookup.Host.AutoCAD
         {
             var document = ActiveDocument;
             var result = new List<CadObjectRef>();
-            PromptSelectionResult? selection = request.UsePreselectedObjects
-                ? document.Editor.SelectImplied()
-                : null;
+            PromptSelectionResult? selection = null;
+            if (request.UsePreselectedObjects)
+            {
+                var implied = document.Editor.SelectImplied();
+                if (implied != null && implied.Status == PromptStatus.OK && implied.Value != null && implied.Value.Count > 0)
+                {
+                    selection = implied;
+                }
+            }
             if ((selection == null || selection.Status != PromptStatus.OK) && request.AllowInteractiveSelection)
-                selection = document.Editor.GetSelection(new PromptSelectionOptions { MessageForAdding = "\nSelect objects to inspect: " });
+            {
+                var promptOptions = new PromptSelectionOptions
+                {
+                    MessageForAdding = "\nChọn đối tượng kiểm tra (hoặc Enter để tiếp tục): ",
+                    RejectObjectsFromNonCurrentSpace = false,
+                    AllowDuplicates = false
+                };
+                selection = document.Editor.GetSelection(promptOptions);
+            }
             if (selection == null || selection.Status != PromptStatus.OK || selection.Value == null) return result;
             using (var transaction = document.Database.TransactionManager.StartOpenCloseTransaction())
             {
@@ -59,6 +73,111 @@ namespace CADLookup.Host.AutoCAD
                     return ToReference(document, tr.GetObject(id, OpenMode.ForRead, true));
             }
             catch { return null; }
+        }
+
+        public IReadOnlyList<CadObjectRef> SnoopDatabase()
+        {
+            var document = ActiveDocument;
+            var result = new List<CadObjectRef>();
+            using (var tr = document.Database.TransactionManager.StartOpenCloseTransaction())
+            {
+                var db = document.Database;
+
+                if (!db.BlockTableId.IsNull)
+                {
+                    var blockTable = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead, true);
+                    foreach (ObjectId btrId in blockTable)
+                    {
+                        var btr = (BlockTableRecord)tr.GetObject(btrId, OpenMode.ForRead, true);
+                        result.Add(new CadObjectRef(Host.DisplayName, document.Name, btr.Handle.ToString(), btr.ObjectId.ToString(),
+                            "BlockTableRecord", layer: btr.Name));
+                    }
+                }
+
+                if (!db.LayerTableId.IsNull)
+                {
+                    var layerTable = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead, true);
+                    foreach (ObjectId ltrId in layerTable)
+                    {
+                        var ltr = (LayerTableRecord)tr.GetObject(ltrId, OpenMode.ForRead, true);
+                        result.Add(new CadObjectRef(Host.DisplayName, document.Name, ltr.Handle.ToString(), ltr.ObjectId.ToString(),
+                            "LayerTableRecord", layer: ltr.Name));
+                    }
+                }
+
+                if (!db.TextStyleTableId.IsNull)
+                {
+                    var textStyleTable = (TextStyleTable)tr.GetObject(db.TextStyleTableId, OpenMode.ForRead, true);
+                    foreach (ObjectId ttrId in textStyleTable)
+                    {
+                        var ttr = (TextStyleTableRecord)tr.GetObject(ttrId, OpenMode.ForRead, true);
+                        result.Add(new CadObjectRef(Host.DisplayName, document.Name, ttr.Handle.ToString(), ttr.ObjectId.ToString(),
+                            "TextStyleTableRecord", layer: ttr.Name));
+                    }
+                }
+
+                if (!db.LinetypeTableId.IsNull)
+                {
+                    var linetypeTable = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead, true);
+                    foreach (ObjectId ltrId in linetypeTable)
+                    {
+                        var ltr = (LinetypeTableRecord)tr.GetObject(ltrId, OpenMode.ForRead, true);
+                        result.Add(new CadObjectRef(Host.DisplayName, document.Name, ltr.Handle.ToString(), ltr.ObjectId.ToString(),
+                            "LinetypeTableRecord", layer: ltr.Name));
+                    }
+                }
+
+                if (!db.DimStyleTableId.IsNull)
+                {
+                    var dimStyleTable = (DimStyleTable)tr.GetObject(db.DimStyleTableId, OpenMode.ForRead, true);
+                    foreach (ObjectId dtrId in dimStyleTable)
+                    {
+                        var dtr = (DimStyleTableRecord)tr.GetObject(dtrId, OpenMode.ForRead, true);
+                        result.Add(new CadObjectRef(Host.DisplayName, document.Name, dtr.Handle.ToString(), dtr.ObjectId.ToString(),
+                            "DimStyleTableRecord", layer: dtr.Name));
+                    }
+                }
+
+                if (!db.RegAppTableId.IsNull)
+                {
+                    var regAppTable = (RegAppTable)tr.GetObject(db.RegAppTableId, OpenMode.ForRead, true);
+                    foreach (ObjectId rtrId in regAppTable)
+                    {
+                        var rtr = (RegAppTableRecord)tr.GetObject(rtrId, OpenMode.ForRead, true);
+                        result.Add(new CadObjectRef(Host.DisplayName, document.Name, rtr.Handle.ToString(), rtr.ObjectId.ToString(),
+                            "RegAppTableRecord", layer: rtr.Name));
+                    }
+                }
+
+                if (!db.NamedObjectsDictionaryId.IsNull)
+                {
+                    var nod = (DBDictionary)tr.GetObject(db.NamedObjectsDictionaryId, OpenMode.ForRead, true);
+                    result.Add(new CadObjectRef(Host.DisplayName, document.Name, nod.Handle.ToString(), nod.ObjectId.ToString(),
+                        "DBDictionary", layer: "NamedObjectsDictionary"));
+                    foreach (DBDictionaryEntry entry in nod)
+                    {
+                        try
+                        {
+                            var entryObj = tr.GetObject(entry.Value, OpenMode.ForRead, true);
+                            result.Add(new CadObjectRef(Host.DisplayName, document.Name, entryObj.Handle.ToString(), entryObj.ObjectId.ToString(),
+                                entryObj.GetType().Name, layer: entry.Key));
+                        }
+                        catch { }
+                    }
+                }
+
+                if (!db.UcsTableId.IsNull)
+                {
+                    var ucsTable = (UcsTable)tr.GetObject(db.UcsTableId, OpenMode.ForRead, true);
+                    foreach (ObjectId id in ucsTable)
+                    {
+                        var ucs = (UcsTableRecord)tr.GetObject(id, OpenMode.ForRead, true);
+                        result.Add(new CadObjectRef(Host.DisplayName, document.Name, ucs.Handle.ToString(), ucs.ObjectId.ToString(),
+                            "UcsTableRecord", layer: ucs.Name));
+                    }
+                }
+            }
+            return result;
         }
 
         public CadObjectSnapshot ReadObject(CadObjectRef objectRef, ReadOptions options)
@@ -122,6 +241,35 @@ namespace CADLookup.Host.AutoCAD
                         properties.Add(P("Is layout", "Boolean", blockRecord.IsLayout.ToString(), "Block definition"));
                         properties.Add(P("Is anonymous", "Boolean", blockRecord.IsAnonymous.ToString(), "Block definition"));
                         properties.Add(P("Origin", "Point3d", FormatPoint(blockRecord.Origin), "Block definition"));
+                    }
+                    else if (root is TextStyleTableRecord textStyle)
+                    {
+                        properties.Add(P("Name", "String", textStyle.Name, "Text style"));
+                        properties.Add(P("Font", "String", textStyle.Font.TypeFace, "Text style"));
+                        properties.Add(P("Text size", "Double", textStyle.TextSize.ToString("G", System.Globalization.CultureInfo.InvariantCulture), "Text style"));
+                        properties.Add(P("X scale", "Double", textStyle.XScale.ToString("G", System.Globalization.CultureInfo.InvariantCulture), "Text style"));
+                        properties.Add(P("Obliquing angle", "Double", textStyle.ObliquingAngle.ToString("G", System.Globalization.CultureInfo.InvariantCulture), "Text style"));
+                        properties.Add(P("File name", "String", textStyle.FileName, "Text style"));
+                        properties.Add(P("Big font file", "String", textStyle.BigFontFileName, "Text style"));
+                    }
+                    else if (root is LinetypeTableRecord linetype)
+                    {
+                        properties.Add(P("Name", "String", linetype.Name, "Linetype"));
+                        properties.Add(P("Comments", "String", linetype.Comments, "Linetype"));
+                        properties.Add(P("Pattern length", "Double", linetype.PatternLength.ToString("G", System.Globalization.CultureInfo.InvariantCulture), "Linetype"));
+                        properties.Add(P("Dashes count", "Int32", linetype.NumDashes.ToString(), "Linetype"));
+                    }
+                    else if (root is DimStyleTableRecord dimStyle)
+                    {
+                        properties.Add(P("Name", "String", dimStyle.Name, "Dimension style"));
+                        properties.Add(P("Dim scale", "Double", dimStyle.Dimscale.ToString("G", System.Globalization.CultureInfo.InvariantCulture), "Dimension style"));
+                        properties.Add(P("Arrow size", "Double", dimStyle.Dimasz.ToString("G", System.Globalization.CultureInfo.InvariantCulture), "Dimension style"));
+                        properties.Add(P("Text height", "Double", dimStyle.Dimtxt.ToString("G", System.Globalization.CultureInfo.InvariantCulture), "Dimension style"));
+                    }
+                    else if (root is DBDictionary dict)
+                    {
+                        properties.Add(P("Entries count", "Int32", dict.Count.ToString(), "Dictionary"));
+                        properties.Add(P("Treat elements as hard", "Boolean", dict.TreatElementsAsHard.ToString(), "Dictionary"));
                     }
                 }
                 if (string.IsNullOrEmpty(objectRef.MemberPath) && !root.OwnerId.IsNull && root.OwnerId != root.ObjectId)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -20,7 +20,7 @@ namespace CADLookup.Playground
             var adapter = new FakeCadHostAdapter();
             var viewModel = new MainViewModel(adapter, new ObjectInspector(adapter), new LocalizationService());
             Content = new CADLookup.UI.Views.MainView(viewModel);
-            Title = "CADLookup Playground — fake CAD host";
+            Title = "CADLookup Playground ??fake CAD host";
         }
     }
 
@@ -42,10 +42,18 @@ namespace CADLookup.Playground
             CadHostCapabilities.ObjectSelection | CadHostCapabilities.HandleLookup | CadHostCapabilities.ObjectRead |
             CadHostCapabilities.GeometrySummary | CadHostCapabilities.ExtendedData | CadHostCapabilities.ReflectedProperties |
             CadHostCapabilities.MethodCatalog | CadHostCapabilities.EventCatalog | CadHostCapabilities.JsonExport |
-            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection);
+            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection | CadHostCapabilities.DatabaseSnoop);
         public CadDocumentInfo GetActiveDocument() => new CadDocumentInfo("sample.dwg", "sample.dwg", "C:\\Samples\\sample.dwg");
         public IReadOnlyList<CadObjectRef> SelectObjects(SelectionRequest request) => _objects;
         public CadObjectRef? FindObjectByHandle(string handle) => _objects.FirstOrDefault(x => x.Handle.Equals(handle, StringComparison.OrdinalIgnoreCase));
+        public IReadOnlyList<CadObjectRef> SnoopDatabase() => new List<CadObjectRef>
+        {
+            new CadObjectRef("Playground", "sample.dwg", "1A2", "mock-1", "BlockTableRecord", layer: "*Model_Space"),
+            new CadObjectRef("Playground", "sample.dwg", "1A3", "mock-2", "LayerTableRecord", layer: "A-WALL"),
+            new CadObjectRef("Playground", "sample.dwg", "1A4", "mock-3", "TextStyleTableRecord", layer: "Standard"),
+            new CadObjectRef("Playground", "sample.dwg", "1A2", "mock-1", "LinetypeTableRecord", layer: "Continuous"),
+            new CadObjectRef("Playground", "sample.dwg", "1A3", "mock-2", "DBDictionary", layer: "NamedObjectsDictionary")
+        };
         public CadObjectSnapshot ReadObject(CadObjectRef reference, ReadOptions options)
         {
             var root = _models[reference.Handle];
@@ -72,7 +80,7 @@ namespace CADLookup.Playground
                 });
             }
             var geometry = string.IsNullOrEmpty(reference.MemberPath)
-                ? new List<GeometrySummary> { new GeometrySummary("Bounds", "Min (0, 0, 0) · Max (1250, 720, 0)") }
+                ? new List<GeometrySummary> { new GeometrySummary("Bounds", "Min (0, 0, 0) 쨌 Max (1250, 720, 0)") }
                 : new List<GeometrySummary>();
             if (reference.MemberPath.Length == 0 && reference.TypeName == "Line")
             {
@@ -140,3 +148,4 @@ namespace CADLookup.Playground
         public double Z { get; }
     }
 }
+

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CADLookup.Core.Domain;
 
 namespace CADLookup.Core.Contracts
@@ -11,5 +11,6 @@ namespace CADLookup.Core.Contracts
         IReadOnlyList<CadObjectRef> SelectObjects(SelectionRequest request);
         CadObjectSnapshot ReadObject(CadObjectRef objectRef, ReadOptions options);
         CadObjectRef? FindObjectByHandle(string handle);
+        IReadOnlyList<CadObjectRef> SnoopDatabase();
     }
 }

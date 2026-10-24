@@ -1,6 +1,7 @@
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Windows;
 using System;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,7 @@ using Autodesk.Windows;
 using WpfOrientation = System.Windows.Controls.Orientation;
 using System.Windows.Media;
 using AcadApp = Autodesk.AutoCAD.ApplicationServices.Core.Application;
+using AcadAppMgd = Autodesk.AutoCAD.ApplicationServices.Application;
 
 namespace CADLookup.Host.AutoCAD
 {
@@ -26,6 +28,9 @@ namespace CADLookup.Host.AutoCAD
         private static string? _requestedHandle;
         private static CadObjectRef? _requestedReference;
         private static Database? _watchedDatabase;
+        private static ContextMenuExtension? _defaultContextMenu;
+        private static ContextMenuExtension? _entityContextMenu;
+
         public void Initialize()
         {
             AppDomain.CurrentDomain.AssemblyResolve += ResolveBundleAssembly;
@@ -33,13 +38,16 @@ namespace CADLookup.Host.AutoCAD
             AcadApp.DocumentManager.DocumentActivated += OnDocumentActivated;
             AcadApp.DocumentManager.DocumentToBeDestroyed += OnDocumentToBeDestroyed;
             WatchDatabase(AcadApp.DocumentManager.MdiActiveDocument?.Database);
+            EnsureContextMenu();
         }
+
         public void Terminate()
         {
             AppDomain.CurrentDomain.AssemblyResolve -= ResolveBundleAssembly;
             AcadApp.Idle -= OnApplicationIdle;
             AcadApp.DocumentManager.DocumentActivated -= OnDocumentActivated;
             AcadApp.DocumentManager.DocumentToBeDestroyed -= OnDocumentToBeDestroyed;
+            RemoveContextMenu();
             WatchDatabase(null);
             _window?.Close();
             _window = null;
@@ -58,6 +66,72 @@ namespace CADLookup.Host.AutoCAD
         private static void OnApplicationIdle(object? sender, EventArgs e)
         {
             EnsureRibbon();
+            EnsureContextMenu();
+        }
+
+        private static void EnsureContextMenu()
+        {
+            if (_defaultContextMenu != null) return;
+            try
+            {
+                // 1. Menu khi click chuot phai tren vung ve khong chon doi tuong (Default Context Menu)
+                _defaultContextMenu = new ContextMenuExtension { Title = "CADLookup" };
+                var miInspect = new MenuItem("CADLookup - Tra cứu đối tượng...");
+                miInspect.Click += (s, e) =>
+                {
+                    AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute("CADLOOKUP ", true, false, false);
+                };
+                _defaultContextMenu.MenuItems.Add(miInspect);
+
+                var miSnoop = new MenuItem("CADLookup - Duyệt Database (Snoop DB)...");
+                miSnoop.Click += (s, e) =>
+                {
+                    AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute("CADLOOKUPSNOOPDB ", true, false, false);
+                };
+                _defaultContextMenu.MenuItems.Add(miSnoop);
+
+                AcadAppMgd.AddDefaultContextMenuExtension(_defaultContextMenu);
+
+                // 2. Menu khi click chuot phai tren doi tuong dang chon (Object Context Menu)
+                _entityContextMenu = new ContextMenuExtension { Title = "CADLookup" };
+                var miEntityInspect = new MenuItem("CADLookup - Tra cứu đối tượng đã chọn");
+                miEntityInspect.Click += (s, e) =>
+                {
+                    AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute("CADLOOKUP ", true, false, false);
+                };
+                _entityContextMenu.MenuItems.Add(miEntityInspect);
+
+                var miEntitySnoop = new MenuItem("CADLookup - Duyệt Database (Snoop DB)...");
+                miEntitySnoop.Click += (s, e) =>
+                {
+                    AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute("CADLOOKUPSNOOPDB ", true, false, false);
+                };
+                _entityContextMenu.MenuItems.Add(miEntitySnoop);
+
+                AcadAppMgd.AddObjectContextMenuExtension(RXObject.GetClass(typeof(Entity)), _entityContextMenu);
+            }
+            catch
+            {
+                // Suppress if already registered
+            }
+        }
+
+        private static void RemoveContextMenu()
+        {
+            try
+            {
+                if (_defaultContextMenu != null)
+                {
+                    AcadAppMgd.RemoveDefaultContextMenuExtension(_defaultContextMenu);
+                    _defaultContextMenu = null;
+                }
+                if (_entityContextMenu != null)
+                {
+                    AcadAppMgd.RemoveObjectContextMenuExtension(RXObject.GetClass(typeof(Entity)), _entityContextMenu);
+                    _entityContextMenu = null;
+                }
+            }
+            catch { }
         }
 
         private static void EnsureRibbon()
@@ -105,6 +179,18 @@ namespace CADLookup.Host.AutoCAD
             });
             source.Items.Add(new RibbonButton
             {
+                Id = "CADLOOKUP_SNOOP_BUTTON",
+                Text = "Snoop DB",
+                ShowText = true,
+                ShowImage = true,
+                Size = RibbonItemSize.Large,
+                Orientation = WpfOrientation.Vertical,
+                ToolTip = "Snoop AutoCAD database tables and dictionaries",
+                LargeImage = CreateIcon("M3,4 L17,4 L17,8 L3,8 Z M3,9 L17,9 L17,13 L3,13 Z M3,14 L17,14 L17,18 L3,18 Z"),
+                CommandHandler = new RibbonCommand("CADLOOKUPSNOOPDB ")
+            });
+            source.Items.Add(new RibbonButton
+            {
                 Id = "CADLOOKUP_REFRESH_BUTTON",
                 Text = "Refresh",
                 ShowText = true,
@@ -140,13 +226,38 @@ namespace CADLookup.Host.AutoCAD
                 AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute(_command, true, false, false);
         }
 
-        [CommandMethod("CADLOOKUP", CommandFlags.UsePickSet)]
+        [CommandMethod("CADLOOKUP", CommandFlags.UsePickSet | CommandFlags.Redraw)]
         public void ShowCadLookup()
         {
             EnsureRibbon();
+            EnsureContextMenu();
             var host = new AutoCadHostAdapter();
             if (_viewModel == null)
-                _viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService(), RequestSelection, RequestInspection, RequestHandleLookup);
+                _viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService(), RequestSelection, RequestInspection, RequestHandleLookup, RequestSnoopDatabase);
+
+            // Kiem tra nguoi dung co chon doi tuong truoc khi go lenh hay khong
+            var doc = AcadApp.DocumentManager.MdiActiveDocument;
+            bool hasPreselection = false;
+            if (doc != null)
+            {
+                var implied = doc.Editor.SelectImplied();
+                if (implied != null && implied.Status == Autodesk.AutoCAD.EditorInput.PromptStatus.OK && implied.Value != null && implied.Value.Count > 0)
+                {
+                    hasPreselection = true;
+                }
+            }
+
+            if (hasPreselection)
+            {
+                // Nguoi dung chon doi tuong truoc -> mo bang voi doi tuong do luon
+                _viewModel.UpdateSelectionFromHost(false);
+            }
+            else
+            {
+                // Nguoi dung go lenh truoc -> hoi chon tren man hinh (Enter de bo qua van mo bang)
+                _viewModel.UpdateSelectionFromHost(true);
+            }
+
             if (_window == null)
             {
                 _window = new InspectorWindow(_viewModel);
@@ -158,7 +269,6 @@ namespace CADLookup.Host.AutoCAD
             if (_window.WindowState == System.Windows.WindowState.Minimized)
                 _window.WindowState = System.Windows.WindowState.Normal;
             _window.Activate();
-            _viewModel.UpdateSelectionFromHost(false);
         }
 
         [CommandMethod("CADLOOKUPSELECT")]
@@ -166,6 +276,29 @@ namespace CADLookup.Host.AutoCAD
         {
             if (_viewModel == null) ShowCadLookup();
             _viewModel?.UpdateSelectionFromHost(true);
+        }
+
+        [CommandMethod("CADLOOKUPSNOOPDB")]
+        [CommandMethod("CADLOOKUPDB")]
+        public void SnoopDatabaseForCadLookup()
+        {
+            EnsureRibbon();
+            EnsureContextMenu();
+            var host = new AutoCadHostAdapter();
+            if (_viewModel == null)
+                _viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService(), RequestSelection, RequestInspection, RequestHandleLookup, RequestSnoopDatabase);
+            if (_window == null)
+            {
+                _window = new InspectorWindow(_viewModel);
+                var helper = new WindowInteropHelper(_window);
+                helper.Owner = AcadApp.MainWindow.Handle;
+                _window.Closed += (_, __) => _window = null;
+            }
+            if (!_window.IsVisible) _window.Show();
+            if (_window.WindowState == System.Windows.WindowState.Minimized)
+                _window.WindowState = System.Windows.WindowState.Normal;
+            _window.Activate();
+            _viewModel?.SnoopDatabaseFromHost();
         }
 
         [CommandMethod("CADLOOKUPINSPECT")]
@@ -197,11 +330,17 @@ namespace CADLookup.Host.AutoCAD
             AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute("CADLOOKUPSELECT ", true, false, false);
         }
 
+        private static void RequestSnoopDatabase()
+        {
+            AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute("CADLOOKUPSNOOPDB ", true, false, false);
+        }
+
         private static void RequestInspection(CadObjectRef reference)
         {
             _requestedReference = reference;
             AcadApp.DocumentManager.MdiActiveDocument?.SendStringToExecute("CADLOOKUPINSPECT ", true, false, false);
         }
+
         private static void RequestHandleLookup(string handle)
         {
             _requestedHandle = handle;

@@ -112,6 +112,25 @@ namespace CADLookup.UI.Localization
                 case "PropertySource.Block definition": return vi ? "Định nghĩa block" : "Block definition";
                 case "PropertySource.Layer": return "Layer";
                 case "PropertySource.Dimension": return vi ? "Kích thước" : "Dimension";
+                case "Theme": return vi ? "Chủ đề" : "Theme";
+                case "Dark": return vi ? "Tối" : "Dark";
+                case "Light": return vi ? "Sáng" : "Light";
+                case "GroupBy": return vi ? "Nhóm theo" : "Group by";
+                case "GroupByType": return vi ? "Theo Loại đối tượng" : "By Object Type";
+                case "GroupByLayer": return vi ? "Theo Layer" : "By Layer";
+                case "GroupByFlat": return vi ? "Danh sách phẳng" : "Flat List";
+                case "StatusFilter": return vi ? "Trạng thái" : "Status";
+                case "AllStatuses": return vi ? "Tất cả trạng thái" : "All Statuses";
+                case "StatusEvaluated": return vi ? "Đã nạp" : "Evaluated";
+                case "StatusDeferred": return vi ? "Chưa nạp (Nhấn đúp)" : "Deferred";
+                case "StatusError": return vi ? "Lỗi / Cảnh báo" : "Errors / Warnings";
+                case "FilterResults": return vi ? "Hiển thị {0} / {1}" : "Showing {0} of {1}";
+                case "ClearFilter": return vi ? "Xóa tìm kiếm" : "Clear search";
+                case "ExpandAll": return vi ? "Mở rộng" : "Expand all";
+                case "CollapseAll": return vi ? "Thu gọn" : "Collapse all";
+                case "SnoopDatabase": return vi ? "Duyệt Database" : "Snoop Database";
+                case "SnoopDatabaseHint": return vi ? "Duyệt các bảng Block, Layer, TextStyle, DimStyle, NOD..." : "Browse all database symbol tables and dictionaries";
+                case "DatabaseTablesLoaded": return vi ? "Đã tải {0} đối tượng từ Database" : "Loaded {0} database objects";
                 default: return key;
             }
         }

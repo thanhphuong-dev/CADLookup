@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -123,6 +123,82 @@ namespace CADLookup.UI.Tests
             Assert.Contains("\"p:Length\"", csv);
         }
 
+        [Fact]
+        public void Tree_view_groups_objects_by_type_layer_and_flat()
+        {
+            var host = new FakeAdapter();
+            var viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService());
+
+            // By default grouped by Type
+            viewModel.SelectedGroupBy = viewModel.Localization["GroupByType"];
+            Assert.Equal(2, viewModel.ObjectTreeRoots.Count);
+            Assert.Contains(viewModel.ObjectTreeRoots, root => root.Title == "Circle" && root.Children.Any(c => c.Title == "B2"));
+            Assert.Contains(viewModel.ObjectTreeRoots, root => root.Title == "Line" && root.Children.Any(c => c.Title == "A1"));
+
+            // Group by Layer
+            viewModel.SelectedGroupBy = viewModel.Localization["GroupByLayer"];
+            Assert.Equal(2, viewModel.ObjectTreeRoots.Count);
+            Assert.Contains(viewModel.ObjectTreeRoots, root => root.Title == "A-WALL" && root.Children.Any(c => c.Subtitle == "A-WALL"));
+            Assert.Contains(viewModel.ObjectTreeRoots, root => root.Title == "EQUIPMENT" && root.Children.Any(c => c.Subtitle == "EQUIPMENT"));
+
+            // Flat List
+            viewModel.SelectedGroupBy = viewModel.Localization["GroupByFlat"];
+            Assert.Equal(2, viewModel.ObjectTreeRoots.Count);
+            Assert.All(viewModel.ObjectTreeRoots, node => Assert.False(node.IsGroup));
+        }
+
+        [Fact]
+        public void Theme_toggle_switches_theme_and_updates_properties()
+        {
+            var host = new FakeAdapter();
+            var viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService());
+
+            var initialTheme = viewModel.Theme;
+            viewModel.ToggleThemeCommand.Execute(null);
+            var newTheme = viewModel.Theme;
+
+            Assert.NotEqual(initialTheme, newTheme);
+            Assert.NotNull(viewModel.ThemeIcon);
+            Assert.NotNull(viewModel.ThemeText);
+
+            // Toggle back
+            viewModel.ToggleThemeCommand.Execute(null);
+            Assert.Equal(initialTheme, viewModel.Theme);
+        }
+
+        [Fact]
+        public void Advanced_status_filter_and_clear_search_work()
+        {
+            var host = new FakeAdapter();
+            var viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService());
+
+            viewModel.SearchText = "Radius";
+            Assert.True(viewModel.HasSearchText);
+            Assert.True(viewModel.ClearSearchCommand.CanExecute(null));
+
+            viewModel.ClearSearchCommand.Execute(null);
+            Assert.Equal(string.Empty, viewModel.SearchText);
+            Assert.False(viewModel.HasSearchText);
+
+            viewModel.SelectedStatusFilter = viewModel.Localization["StatusEvaluated"];
+            Assert.All(viewModel.Properties, p => Assert.Equal(viewModel.Localization.LocalizeStatus("Available"), p.Status));
+        }
+
+        [Fact]
+        public void Snoop_database_loads_tables_into_tree_and_selects_first()
+        {
+            var host = new FakeAdapter();
+            var viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService());
+
+            viewModel.SnoopDatabaseCommand.Execute(null);
+
+            Assert.Equal(3, viewModel.Objects.Count);
+            Assert.Equal(3, viewModel.VisibleObjects.Count);
+            Assert.Contains(viewModel.Objects, x => x.TypeName == "BlockTableRecord");
+            Assert.True(viewModel.HasProperties);
+            Assert.Equal("A1", viewModel.SelectedHandle);
+        }
+
         private sealed class FakeAdapter : ICadHostAdapter
         {
             private readonly CadObjectRef _first = new("Fake", "drawing.dwg", "A1", "native-A1", "Line", layer: "A-WALL");
@@ -131,6 +207,7 @@ namespace CADLookup.UI.Tests
             public CadDocumentInfo GetActiveDocument() => new("drawing.dwg", "drawing.dwg", "drawing.dwg");
             public IReadOnlyList<CadObjectRef> SelectObjects(SelectionRequest request) => new[] { _first, _second };
             public CadObjectRef? FindObjectByHandle(string handle) => handle == "B2" ? _second : null;
+            public IReadOnlyList<CadObjectRef> SnoopDatabase() => new[] { _first, _second, new CadObjectRef("Fake", "drawing.dwg", "T1", "native-T1", "BlockTableRecord", layer: "*Model_Space") };
             public CadObjectSnapshot ReadObject(CadObjectRef objectRef, ReadOptions options)
             {
                 var properties = objectRef.Handle == "A1"
@@ -150,3 +227,5 @@ namespace CADLookup.UI.Tests
         }
     }
 }
+
+
