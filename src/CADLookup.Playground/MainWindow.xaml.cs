@@ -22,6 +22,7 @@ namespace CADLookup.Playground
             Content = new CADLookup.UI.Views.MainView(viewModel);
             Title = "CADLookup Playground ??fake CAD host";
         }
+
     }
 
     internal sealed class FakeCadHostAdapter : ICadHostAdapter

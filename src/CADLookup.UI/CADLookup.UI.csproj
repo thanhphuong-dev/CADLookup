@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <UseWPF>true</UseWPF>
@@ -8,8 +8,18 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Viwqw\**" />
+    <EmbeddedResource Remove="Viwqw\**" />
+    <None Remove="Viwqw\**" />
+    <Page Remove="Viwqw\**" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CADLookup.Core\CADLookup.Core.csproj" />
     <ProjectReference Include="..\CADLookup.Infrastructure\CADLookup.Infrastructure.csproj" />
-    <PackageReference Include="HandyControl" Version="3.5.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Model\" />
+    <Folder Include="Language\" />
+    <Folder Include="ViewModel\" />
   </ItemGroup>
 </Project>

@@ -153,6 +153,7 @@ namespace CADLookup.Host.AutoCAD
             var source = new RibbonPanelSource { Id = panelId, Title = "Object Inspector" };
             var panel = new RibbonPanel { Source = source };
             tab.Panels.Add(panel);
+            // Mỗi nút một màu riêng de nhan biet nhanh tren Ribbon
             source.Items.Add(new RibbonButton
             {
                 Id = "CADLOOKUP_OPEN_BUTTON",
@@ -162,7 +163,8 @@ namespace CADLookup.Host.AutoCAD
                 Size = RibbonItemSize.Large,
                 Orientation = WpfOrientation.Vertical,
                 ToolTip = "Open CADLookup to inspect selected drawing objects",
-                LargeImage = CreateIcon("M4,3 L16,3 L16,17 L4,17 Z M6,6 L14,6 M6,9 L14,9 M6,12 L11,12"),
+                LargeImage = CreateIcon(RibbonIcon.Inspect, Color.FromRgb(37, 99, 235)),
+                Image = CreateIcon(RibbonIcon.Inspect, Color.FromRgb(37, 99, 235)),
                 CommandHandler = new RibbonCommand("CADLOOKUP ")
             });
             source.Items.Add(new RibbonButton
@@ -174,7 +176,8 @@ namespace CADLookup.Host.AutoCAD
                 Size = RibbonItemSize.Large,
                 Orientation = WpfOrientation.Vertical,
                 ToolTip = "Choose drawing objects for CADLookup",
-                LargeImage = CreateIcon("M4,3 L16,10 L11,11 L9,17 Z"),
+                LargeImage = CreateIcon(RibbonIcon.Select, Color.FromRgb(16, 185, 129)),
+                Image = CreateIcon(RibbonIcon.Select, Color.FromRgb(16, 185, 129)),
                 CommandHandler = new RibbonCommand("CADLOOKUPSELECT ")
             });
             source.Items.Add(new RibbonButton
@@ -186,7 +189,8 @@ namespace CADLookup.Host.AutoCAD
                 Size = RibbonItemSize.Large,
                 Orientation = WpfOrientation.Vertical,
                 ToolTip = "Snoop AutoCAD database tables and dictionaries",
-                LargeImage = CreateIcon("M3,4 L17,4 L17,8 L3,8 Z M3,9 L17,9 L17,13 L3,13 Z M3,14 L17,14 L17,18 L3,18 Z"),
+                LargeImage = CreateIcon(RibbonIcon.SnoopDatabase, Color.FromRgb(139, 92, 246)),
+                Image = CreateIcon(RibbonIcon.SnoopDatabase, Color.FromRgb(139, 92, 246)),
                 CommandHandler = new RibbonCommand("CADLOOKUPSNOOPDB ")
             });
             source.Items.Add(new RibbonButton
@@ -198,23 +202,49 @@ namespace CADLookup.Host.AutoCAD
                 Size = RibbonItemSize.Large,
                 Orientation = WpfOrientation.Vertical,
                 ToolTip = "Reload the current CADLookup inspection",
-                LargeImage = CreateIcon("M15,7 A6,6 0 1 0 16,12 M15,7 L15,3 M15,7 L11,7"),
+                LargeImage = CreateIcon(RibbonIcon.Refresh, Color.FromRgb(245, 158, 11)),
+                Image = CreateIcon(RibbonIcon.Refresh, Color.FromRgb(245, 158, 11)),
                 CommandHandler = new RibbonCommand("CADLOOKUPREFRESH ")
             });
         }
 
-        private static ImageSource CreateIcon(string path)
+        private static ImageSource CreateIcon(RibbonIcon icon, Color color)
         {
-            var brush = new SolidColorBrush(Color.FromRgb(40, 100, 215));
+            var brush = new SolidColorBrush(color);
             brush.Freeze();
-            var pen = new Pen(brush, 1.75);
+            var pen = new Pen(brush, 1.6);
             pen.Freeze();
-            var drawing = new GeometryDrawing(null, pen, Geometry.Parse(path));
+            var drawing = new GeometryDrawing(null, pen, Geometry.Parse(IconGeometry(icon)));
             drawing.Freeze();
             var image = new DrawingImage(drawing);
             image.Freeze();
             return image;
         }
+
+        private static string IconGeometry(RibbonIcon icon)
+        {
+            switch (icon)
+            {
+                // Phong kinh soi document: trang giay + kinh lup
+                case RibbonIcon.Inspect:
+                    return "M4,2 L12,2 L12,8 M4,2 L4,16 L10,16 M6,5 L10,5 M6,8 L9,8 " +
+                        "M15.2,10.8 A3.4,3.4 0 1,1 10.8,15.2 A3.4,3.4 0 1,1 15.2,10.8 M17.8,17.8 L14.6,14.6";
+                // Con tro chon doi tuong, co bong dap
+                case RibbonIcon.Select:
+                    return "M5,3 L16.5,10 L11.4,11.2 L9.2,16.4 Z M11,12 L15.5,16.5";
+                // Cylinder database 3 lop
+                case RibbonIcon.SnoopDatabase:
+                    return "M4,5 A6,2.4 0 1,0 16,5 A6,2.4 0 1,0 4,5 M4,5 L4,14.5 A6,2.4 0 1,0 16,14.5 L16,5 " +
+                        "M4,9.75 A6,2.4 0 1,0 16,9.75";
+                // Mui ten tron refresh
+                case RibbonIcon.Refresh:
+                    return "M15.6,6.4 A6,6 0 1,0 16,10 M15.6,6.4 L15.6,2.4 M15.6,6.4 L11.6,6.4";
+                default:
+                    return "M4,4 L16,4 L16,16 L4,16 Z";
+            }
+        }
+
+        private enum RibbonIcon { Inspect, Select, SnoopDatabase, Refresh }
 
         private sealed class RibbonCommand : ICommand
         {

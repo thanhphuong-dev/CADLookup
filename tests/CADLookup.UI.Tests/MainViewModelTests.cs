@@ -43,6 +43,26 @@ namespace CADLookup.UI.Tests
         }
 
         [Fact]
+        public void ViewModel_filters_support_multi_token_queries_without_false_positives()
+        {
+            var host = new FakeAdapter();
+            var viewModel = new MainViewModel(host, new ObjectInspector(host), new LocalizationService());
+
+            viewModel.SearchText = "radius 12.5";
+            Assert.Single(viewModel.Properties);
+
+            viewModel.SearchText = "radius missing";
+            Assert.Empty(viewModel.Properties);
+
+            viewModel.SearchText = string.Empty;
+            viewModel.ObjectFilter = "line wall";
+            Assert.Single(viewModel.ObjectTreeRoots);
+
+            viewModel.ObjectFilter = "line equipment";
+            Assert.Empty(viewModel.ObjectTreeRoots);
+        }
+
+        [Fact]
         public void Navigation_history_supports_back_and_forward()
         {
             var host = new FakeAdapter();

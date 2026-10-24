@@ -7,7 +7,9 @@ CADLookup là công cụ kiểm tra bản vẽ CAD đang hoạt động, chạy 
 - Adapter **AutoCAD 2023** nhắm đến AutoCAD 2023 Managed SDK đã cài đặt và .NET Framework 4.8.
 - Tab Ribbon **CADLookup** trong AutoCAD với các nút **Inspect** (Kiểm tra), **Select** (Chọn) và **Refresh** (Làm mới), cùng với lệnh `CADLOOKUP`.
 - `CADLookup.Core` chứa các hợp đồng độc lập với SDK, ảnh chụp nhanh miền nghiệp vụ và dịch vụ ứng dụng kiểm tra; `CADLookup.Infrastructure` quản lý cài đặt cục bộ và ghi nhật ký file.
-- Cửa sổ WPF `CADLOOKUP` dạng modeless (không chặn giao diện) được quản lý bởi cửa sổ chính AutoCAD, tích hợp theme HandyControl, nhãn tiếng Việt/Anh, lưu tuỳ chọn ngôn ngữ, danh sách đối tượng, tra cứu handle, tìm kiếm thuộc tính/lọc nguồn, tab hình học, chi tiết tham chiếu đối tượng, sao chép giá trị/đường dẫn, xuất JSON/CSV và lịch sử điều hướng.
+- Cửa sổ WPF `CADLOOKUP` dạng modeless (không chặn giao diện) được quản lý bởi cửa sổ chính AutoCAD, giao diện WPF thuần (không dùng thư viện UI ngoài) với theme sáng/tối, nhãn tiếng Việt/Anh, lưu tuỳ chọn ngôn ngữ, danh sách đối tượng, tra cứu handle, tìm kiếm thuộc tính/lọc nguồn, tab hình học, chi tiết tham chiếu đối tượng, sao chép giá trị/đường dẫn, xuất JSON/CSV và lịch sử điều hướng.
+- Tìm kiếm dùng chung bộ so khớp token (mọi từ khoá phải xuất hiện), bỏ qua hoa/thường và dấu tiếng Việt: gõ `ban ve` vẫn tìm ra `Bản vẽ`; áp dụng cho lọc thuộc tính và lọc danh sách đối tượng.
+- Phím tắt trong cửa sổ: `F5` làm mới, `Ctrl+F` nhảy tới ô tìm thuộc tính, `Ctrl+K` nhảy tới ô tra cứu handle, `Esc` xoá bộ lọc đang nhập.
 - Thông tin đối tượng cố định bao gồm: định danh đối tượng, lớp/trạng thái, thuộc tính trực quan, kích thước đường thẳng/tròn/polyline/cung tròn/ellipse/spline/hatch, giá trị kích thước, văn bản, thuộc tính block, bản ghi lớp và bảng block, phạm vi bao quanh, liên kết owner/block và XData.
 - Các thuộc tính CLR công khai được liệt kê dưới dạng thành viên trì hoãn. Nhấp đúp vào một thành viên để đánh giá nó trong ngữ cảnh lệnh máy chủ; các giá trị phức tạp và tập hợp có thể được mở lại. Chữ ký phương thức công khai và các loại sự kiện được lập danh mục nhưng không bao giờ được gọi hoặc đăng ký.
 - Quá trình kiểm tra áp dụng giới hạn độ sâu, thuộc tính và tập hợp; các vòng lặp và getter thất bại được báo cáo là trạng thái thuộc tính thay vì kết thúc phiên.
@@ -28,13 +30,13 @@ dotnet test .\CADLookup.sln -c Release -p:AutoCADManagedDir="C:\Program Files\Au
 Script build tạo ra `.artifacts\CADLookup.bundle`; tham số `-Install` sao chép bundle vào thư mục `ApplicationPlugins` của AutoCAD cho người dùng hiện tại. Khởi động lại AutoCAD, chọn một hoặc nhiều đối tượng bản vẽ, sau đó nhấp **CADLookup > Inspect** hoặc chạy lệnh `CADLOOKUP`.
 
 - **Select** – Bắt đầu lệnh chọn đối tượng trong AutoCAD.
-- **Refresh** – Tải lại lần kiểm tra hiện tại.
+- **Refresh** – Tải lại lần kiểm tra hiện tại (hoặc nhấn `F5` trong cửa sổ).
 - **Nhấp đúp** một hàng có tham chiếu điều hướng để kiểm tra nó.
 - **Nhấp đúp** một thuộc tính reflection trì hoãn để đánh giá nó.
 - **Nhấp chuột phải** vào thuộc tính để sao chép giá trị, sao chép đường dẫn và mở đối tượng liên quan.
 - Nhập handle dạng thập lục phân vào thanh trên cùng để tìm đối tượng trong bản vẽ đang hoạt động.
 
-Để build mà không cài đặt, bỏ qua tham số `-Install`. Để tải thủ công, sao chép bundle đã tạo vào `ApplicationPlugins`, hoặc dùng lệnh `NETLOAD` với file `CADLookup.Host.AutoCAD.dll` từ thư mục Release; giữ `CADLookup.Core.dll`, `CADLookup.UI.dll` và `HandyControl.dll` cùng thư mục với nó.
+Để build mà không cài đặt, bỏ qua tham số `-Install`. Để tải thủ công, sao chép bundle đã tạo vào `ApplicationPlugins`, hoặc dùng lệnh `NETLOAD` với file `CADLookup.Host.AutoCAD.dll` từ thư mục Release; giữ `CADLookup.Core.dll`, `CADLookup.UI.dll` và `CADLookup.Infrastructure.dll` cùng thư mục với nó.
 
 ## Kiểm tra smoke AutoCAD 2023
 
