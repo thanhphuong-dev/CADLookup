@@ -9,7 +9,8 @@ $root = $PSScriptRoot
 $output = Join-Path $root ".artifacts\CADLookup.bundle"
 $contents = Join-Path $output "Contents\Windows"
 
-dotnet build (Join-Path $root "CADLookup.sln") -c Release "-p:AutoCADManagedDir=$AutoCADManagedDir"
+$autoCadProject = Join-Path $root "src\CADLookup.Host.AutoCAD\CADLookup.Host.AutoCAD.csproj"
+dotnet build $autoCadProject -c Release "-p:AutoCADManagedDir=$AutoCADManagedDir"
 if ($LASTEXITCODE -ne 0) { throw "CADLookup build failed with exit code $LASTEXITCODE" }
 
 New-Item -ItemType Directory -Path $contents -Force | Out-Null

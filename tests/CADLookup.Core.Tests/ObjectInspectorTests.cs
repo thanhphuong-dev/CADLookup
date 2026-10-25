@@ -154,6 +154,10 @@ public sealed class ObjectInspectorTests
         public IReadOnlyList<CadObjectRef> SelectObjects(SelectionRequest request) => new[] { Reference };
         public CadObjectRef? FindObjectByHandle(string handle) => Reference;
         public IReadOnlyList<CadObjectRef> SnoopDatabase() => new[] { Reference };
+        public IReadOnlyList<CadObjectRef> SearchObjects(SearchRequest request) => new[] { Reference };
+        public void ZoomToObject(CadObjectRef objectRef) { }
+        public void SelectInDrawing(CadObjectRef objectRef) { }
+        public void SetTransientHighlight(CadObjectRef? objectRef) { }
         public CadObjectSnapshot ReadObject(CadObjectRef objectRef, ReadOptions options)
         {
             LastOptions = options;

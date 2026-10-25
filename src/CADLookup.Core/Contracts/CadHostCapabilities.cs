@@ -19,6 +19,10 @@ namespace CADLookup.Core.Contracts
         JsonExport = 1 << 10,
         TextInspection = 1 << 11,
         BlockAttributeInspection = 1 << 12,
-        DatabaseSnoop = 1 << 13
+        DatabaseSnoop = 1 << 13,
+        ZoomToObject = 1 << 14,
+        SelectInDrawing = 1 << 15,
+        DatabaseSearch = 1 << 16,
+        TransientHighlight = 1 << 17
     }
 }

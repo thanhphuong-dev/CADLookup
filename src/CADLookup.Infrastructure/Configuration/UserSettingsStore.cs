@@ -46,6 +46,34 @@ namespace CADLookup.Infrastructure.Configuration
             WriteSettings(settings);
         }
 
+        public static bool LoadPropertyGrouping()
+        {
+            return ReadSettings().GroupProperties;
+        }
+
+        public static void SavePropertyGrouping(bool grouped)
+        {
+            var settings = ReadSettings();
+            settings.GroupProperties = grouped;
+            WriteSettings(settings);
+        }
+
+        /// <summary>Returns null when no valid window bounds were stored yet.</summary>
+        public static WindowBounds? LoadWindowBounds()
+        {
+            var data = ReadSettings().Window;
+            if (data == null || data.Width < 640 || data.Height < 480) return null;
+            return new WindowBounds(data.Left, data.Top, data.Width, data.Height, data.Maximized);
+        }
+
+        public static void SaveWindowBounds(double left, double top, double width, double height, bool maximized)
+        {
+            if (double.IsNaN(left) || double.IsNaN(top) || width < 640 || height < 480) return;
+            var settings = ReadSettings();
+            settings.Window = new WindowBoundsData { Left = left, Top = top, Width = width, Height = height, Maximized = maximized };
+            WriteSettings(settings);
+        }
+
         private static SettingsData ReadSettings()
         {
             try
@@ -92,6 +120,32 @@ namespace CADLookup.Infrastructure.Configuration
             [DataMember(Order = 2)] public string Language { get; set; } = "vi";
             [DataMember(Order = 3)] public string Theme { get; set; } = "Light";
             [DataMember(Order = 4)] public string GroupBy { get; set; } = "Type";
+            [DataMember(Order = 5, EmitDefaultValue = false)] public bool GroupProperties { get; set; } = true;
+            [DataMember(Order = 6, EmitDefaultValue = false)] public WindowBoundsData? Window { get; set; }
         }
+
+        [DataContract]
+        private sealed class WindowBoundsData
+        {
+            [DataMember(Order = 1)] public double Left { get; set; }
+            [DataMember(Order = 2)] public double Top { get; set; }
+            [DataMember(Order = 3)] public double Width { get; set; } = 1360;
+            [DataMember(Order = 4)] public double Height { get; set; } = 860;
+            [DataMember(Order = 5)] public bool Maximized { get; set; }
+        }
+    }
+
+    public sealed class WindowBounds
+    {
+        public WindowBounds(double left, double top, double width, double height, bool maximized)
+        {
+            Left = left; Top = top; Width = width; Height = height; Maximized = maximized;
+        }
+
+        public double Left { get; }
+        public double Top { get; }
+        public double Width { get; }
+        public double Height { get; }
+        public bool Maximized { get; }
     }
 }

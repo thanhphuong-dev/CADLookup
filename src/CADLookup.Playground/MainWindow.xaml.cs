@@ -43,7 +43,8 @@ namespace CADLookup.Playground
             CadHostCapabilities.ObjectSelection | CadHostCapabilities.HandleLookup | CadHostCapabilities.ObjectRead |
             CadHostCapabilities.GeometrySummary | CadHostCapabilities.ExtendedData | CadHostCapabilities.ReflectedProperties |
             CadHostCapabilities.MethodCatalog | CadHostCapabilities.EventCatalog | CadHostCapabilities.JsonExport |
-            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection | CadHostCapabilities.DatabaseSnoop);
+            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection | CadHostCapabilities.DatabaseSnoop |
+            CadHostCapabilities.ZoomToObject | CadHostCapabilities.SelectInDrawing | CadHostCapabilities.DatabaseSearch);
         public CadDocumentInfo GetActiveDocument() => new CadDocumentInfo("sample.dwg", "sample.dwg", "C:\\Samples\\sample.dwg");
         public IReadOnlyList<CadObjectRef> SelectObjects(SelectionRequest request) => _objects;
         public CadObjectRef? FindObjectByHandle(string handle) => _objects.FirstOrDefault(x => x.Handle.Equals(handle, StringComparison.OrdinalIgnoreCase));
@@ -55,6 +56,11 @@ namespace CADLookup.Playground
             new CadObjectRef("Playground", "sample.dwg", "1A2", "mock-1", "LinetypeTableRecord", layer: "Continuous"),
             new CadObjectRef("Playground", "sample.dwg", "1A3", "mock-2", "DBDictionary", layer: "NamedObjectsDictionary")
         };
+        public IReadOnlyList<CadObjectRef> SearchObjects(SearchRequest request) =>
+            string.IsNullOrWhiteSpace(request.Query) ? Array.Empty<CadObjectRef>() : _objects;
+        public void ZoomToObject(CadObjectRef objectRef) { }
+        public void SelectInDrawing(CadObjectRef objectRef) { }
+        public void SetTransientHighlight(CadObjectRef? objectRef) { }
         public CadObjectSnapshot ReadObject(CadObjectRef reference, ReadOptions options)
         {
             var root = _models[reference.Handle];

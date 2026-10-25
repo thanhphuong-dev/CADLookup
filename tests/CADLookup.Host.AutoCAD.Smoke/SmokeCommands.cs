@@ -65,7 +65,8 @@ namespace CADLookup.Host.AutoCAD.Smoke
                     "The inspector window is not owned by the AutoCAD main window.");
                 Require(ribbonTab != null && ribbonButtons.Any(item => item.Id == "CADLOOKUP_OPEN_BUTTON") &&
                     ribbonButtons.Any(item => item.Id == "CADLOOKUP_SELECT_BUTTON") &&
-                    ribbonButtons.Any(item => item.Id == "CADLOOKUP_REFRESH_BUTTON"),
+                    ribbonButtons.Any(item => item.Id == "CADLOOKUP_REFRESH_BUTTON") &&
+                    ribbonButtons.Any(item => item.Id == "CADLOOKUP_LANGUAGE_BUTTON"),
                     "The CADLookup Ribbon controls were not registered.");
                 Require(string.Equals(expectedHandle, selectedHandle, StringComparison.OrdinalIgnoreCase),
                     "Selected handle mismatch. Expected " + expectedHandle + ", got " + selectedHandle + ".");
@@ -75,6 +76,14 @@ namespace CADLookup.Host.AutoCAD.Smoke
                     Require(propertyNames.Contains("Length") && propertyNames.Contains("Start point") &&
                         geometry != null && geometry.Count > 0, "Line geometry properties were not loaded.");
                 VerifyAdapterCoverage(new AutoCadHostAdapter(), samples);
+                var hostActions = VerifyHostActions(new AutoCadHostAdapter(), samples, document);
+
+                window.Close();
+                document.Editor.SetImpliedSelection(new[] { samples.LineId });
+                extensionType.GetMethod("SelectForCadLookup")?.Invoke(command, null);
+                var reopenedWindow = extensionType.GetField("_window", flags)?.GetValue(null) as Window;
+                Require(reopenedWindow != null && reopenedWindow.IsVisible && !ReferenceEquals(window, reopenedWindow),
+                    "The Ribbon selection command did not reopen the inspector window after selection.");
 
                 File.WriteAllText(reportPath,
                     "PASS\r\nDocument=" + document.Name + "\r\nHandle=" + expectedHandle +
@@ -83,6 +92,7 @@ namespace CADLookup.Host.AutoCAD.Smoke
                     "\r\nRibbonTab=" + ribbonTab!.Title + "\r\nRibbonButtons=" + string.Join(",", ribbonButtons.Select(item => item.Text)) +
                     "\r\nObjectCount=" + visibleObjects!.Count + "\r\nPropertyCount=" + propertyNames.Length +
                     "\r\nGeometryCount=" + (geometry?.Count ?? 0) + "\r\nAdapterCoverage=Line,Circle,Polyline,Text,Block,Layer,Erased" +
+                    "\r\n" + hostActions +
                     "\r\nProperties=" + string.Join(",", propertyNames));
                 document.Editor.WriteMessage("\nCADLookup AutoCAD smoke test: PASS. Report: {0}", reportPath);
             }
@@ -107,9 +117,64 @@ namespace CADLookup.Host.AutoCAD.Smoke
             VerifyProperties(adapter, samples.TextHandle, "DBText", "Text", "Position", "Height");
             VerifyProperties(adapter, samples.BlockHandle, "BlockReference", "Block name", "Attribute SMOKE_TAG");
             VerifyProperties(adapter, samples.LayerHandle, "LayerTableRecord", "Name", "Frozen", "Locked");
+
+            var lineFigures = Read(adapter, samples.LineHandle).Figures;
+            Require(lineFigures.Count == 1 && lineFigures[0].Kind == GeometryFigure.PolylineKind && lineFigures[0].PointCount == 2,
+                "The smoke line did not produce exactly one two-point polyline figure.");
+            var circleFigures = Read(adapter, samples.CircleHandle).Figures;
+            Require(circleFigures.Count > 0 && circleFigures[0].Closed && circleFigures[0].PointCount > 8,
+                "The smoke circle was not approximated as a closed multi-point figure.");
+            var blockFigures = Read(adapter, samples.BlockHandle).Figures;
+            Require(blockFigures.Count == 1 && blockFigures[0].Closed,
+                "The smoke block reference did not produce a closed extents-box figure.");
+
             var erased = Read(adapter, samples.ErasedHandle);
             Require(string.Equals(erased.State, "Erased", StringComparison.OrdinalIgnoreCase),
                 "An erased object was not reported as erased.");
+        }
+
+        /// <summary>Exercises whole-drawing search, zoom-to-object, select-in-drawing and transient highlight.</summary>
+        private static string VerifyHostActions(AutoCadHostAdapter adapter, SampleSet samples, Document document)
+        {
+            var textRef = adapter.FindObjectByHandle(samples.TextHandle)
+                ?? throw new InvalidOperationException("Smoke text was not found for search coverage.");
+            var circleRef = adapter.FindObjectByHandle(samples.CircleHandle)
+                ?? throw new InvalidOperationException("Smoke circle was not found for zoom coverage.");
+            var blockRef = adapter.FindObjectByHandle(samples.BlockHandle)
+                ?? throw new InvalidOperationException("Smoke block was not found for search coverage.");
+
+            var textHits = adapter.SearchObjects(new SearchRequest("text cadlookup"));
+            Require(textHits.Any(item => string.Equals(item.Handle, samples.TextHandle, StringComparison.OrdinalIgnoreCase)),
+                "Whole-drawing search did not find the smoke text via query 'text cadlookup'.");
+            var blockHits = adapter.SearchObjects(new SearchRequest("smoke_tag smoke value"));
+            Require(blockHits.Any(item => string.Equals(item.Handle, samples.BlockHandle, StringComparison.OrdinalIgnoreCase)),
+                "Whole-drawing search did not find the smoke block via its attribute values.");
+            var vietnameseHits = adapter.SearchObjects(new SearchRequest("cadlookup smoke"));
+            Require(vietnameseHits.Count > 0, "Whole-drawing search returned no results for a valid query.");
+            var emptyHits = adapter.SearchObjects(new SearchRequest("zzz-not-present"));
+            Require(emptyHits.Count == 0, "Whole-drawing search returned false positives for a non-matching query.");
+
+            var viewBefore = document.Editor.GetCurrentView();
+            adapter.ZoomToObject(circleRef);
+            var viewAfter = document.Editor.GetCurrentView();
+            var centerOffset = Math.Abs(viewAfter.CenterPoint.X - 150);
+            Require(centerOffset < Math.Max(viewAfter.Width / 2.0, 1e-6),
+                "Zoom-to-object did not center the view on the smoke circle (offset " + centerOffset.ToString("G", System.Globalization.CultureInfo.InvariantCulture) + ").");
+
+            adapter.SelectInDrawing(circleRef);
+            var implied = document.Editor.SelectImplied();
+            Require(implied != null && implied.Status == PromptStatus.OK && implied.Value != null && implied.Value.Count == 1 &&
+                string.Equals(implied.Value.GetObjectIds()[0].Handle.ToString(), circleRef.Handle, StringComparison.OrdinalIgnoreCase),
+                "Select-in-drawing did not make the smoke circle the pickfirst selection.");
+
+            adapter.SetTransientHighlight(textRef);
+            adapter.SetTransientHighlight(null);
+
+            return "Search=text:" + textHits.Count + ",block:" + blockHits.Count +
+                ",negative:" + emptyHits.Count +
+                "\r\nZoomCenterOffset=" + centerOffset.ToString("G", System.Globalization.CultureInfo.InvariantCulture) +
+                "\r\nSelectInDrawing=pickfirst-ok" +
+                "\r\nTransientHighlight=set,cleared";
         }
 
         private static void VerifyProperties(AutoCadHostAdapter adapter, string handle, string description, params string[] names)

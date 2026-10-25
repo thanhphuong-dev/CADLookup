@@ -11,11 +11,16 @@
   <CompanyDetails Name="CADLookup" />
   <Components Description="AutoCAD 2023 managed plug-in">
     <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R24.2" SeriesMax="R24.2" />
-    <ComponentEntry AppName="CADLookup" AppDescription="CAD object inspector" AppType=".Net" ModuleName="./Contents/Windows/CADLookup.Host.AutoCAD.dll" LoadOnCommandInvocation="True">
+    <ComponentEntry AppName="CADLookup" AppDescription="CAD object inspector" AppType=".Net" ModuleName="./Contents/Windows/CADLookup.Host.AutoCAD.dll" LoadOnAutoCADStartup="True" LoadOnCommandInvocation="True">
       <Commands GroupName="CADLOOKUP">
         <Command Global="CADLOOKUP" Local="CADLOOKUP" />
         <Command Global="CADLOOKUPSELECT" Local="CADLOOKUPSELECT" />
+        <Command Global="CADLOOKUPSNOOPDB" Local="CADLOOKUPSNOOPDB" />
+        <Command Global="CADLOOKUPDB" Local="CADLOOKUPDB" />
+        <Command Global="CADLOOKUPINSPECT" Local="CADLOOKUPINSPECT" />
         <Command Global="CADLOOKUPREFRESH" Local="CADLOOKUPREFRESH" />
+        <Command Global="CADLOOKUPLANG" Local="CADLOOKUPLANG" />
+        <Command Global="CADLOOKUPLANGUAGE" Local="CADLOOKUPLANGUAGE" />
       </Commands>
     </ComponentEntry>
   </Components>

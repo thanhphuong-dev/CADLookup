@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <PlatformTarget>x64</PlatformTarget>
+    <ZwcadManagedDir Condition="'$(ZwcadManagedDir)' == ''">C:\Users\xemch\Downloads\Telegram Desktop\ThưvienZwCAD</ZwcadManagedDir>
+    <ZwcadApiReferencesComplete Condition="Exists('$(ZwcadManagedDir)\ZwDatabaseMgd.dll') and Exists('$(ZwcadManagedDir)\ZcCui.dll') and Exists('$(ZwcadManagedDir)\ZcWindows.dll') and Exists('$(ZwcadManagedDir)\ZdWindows.dll')">true</ZwcadApiReferencesComplete>
+    <ZwcadApiReferencesDir Condition="'$(ZwcadApiReferencesComplete)' == 'true'">$(ZwcadManagedDir)</ZwcadApiReferencesDir>
+    <ZwcadApiReferencesDir Condition="'$(ZwcadApiReferencesDir)' == ''">$(PkgZWCAD_NetApi)\lib\net47</ZwcadApiReferencesDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CADLookup.Core\CADLookup.Core.csproj" />
+    <ProjectReference Include="..\CADLookup.UI\CADLookup.UI.csproj" />
+    <PackageReference Include="ZWCAD.NetApi" Version="20.26.0" GeneratePathProperty="true" PrivateAssets="all" ExcludeAssets="all" Condition="'$(ZwcadApiReferencesComplete)' != 'true'" />
+    <Reference Include="ZwManaged">
+      <HintPath>$(ZwcadApiReferencesDir)\ZwManaged.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ZwDatabaseMgd">
+      <HintPath>$(ZwcadApiReferencesDir)\ZwDatabaseMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ZcCui">
+      <HintPath>$(ZwcadApiReferencesDir)\ZcCui.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ZcWindows">
+      <HintPath>$(ZwcadApiReferencesDir)\ZcWindows.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ZdWindows">
+      <HintPath>$(ZwcadApiReferencesDir)\ZdWindows.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

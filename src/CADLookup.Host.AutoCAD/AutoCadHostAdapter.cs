@@ -5,6 +5,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
+using CADLookup.Core.Application;
 using CADLookup.Core.Contracts;
 using CADLookup.Core.Domain;
 using AcadApp = Autodesk.AutoCAD.ApplicationServices.Core.Application;
@@ -13,12 +14,18 @@ namespace CADLookup.Host.AutoCAD
 {
     public sealed class AutoCadHostAdapter : ICadHostAdapter
     {
+        public bool LastSelectionWasCancelled { get; private set; }
+        private ObjectId _highlightedId;
+        private string? _highlightedDocumentName;
+
         public CadHostInfo Host => new CadHostInfo("AutoCAD", AcadApp.Version.Major.ToString(), ".NET Framework 4.8",
             CadHostCapabilities.ObjectSelection | CadHostCapabilities.HandleLookup | CadHostCapabilities.ObjectRead |
             CadHostCapabilities.GeometrySummary | CadHostCapabilities.ExtendedData | CadHostCapabilities.ReflectedProperties |
             CadHostCapabilities.MethodCatalog | CadHostCapabilities.EventCatalog |
             CadHostCapabilities.RelationshipNavigation | CadHostCapabilities.ModelessInspector | CadHostCapabilities.JsonExport |
-            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection | CadHostCapabilities.DatabaseSnoop);
+            CadHostCapabilities.TextInspection | CadHostCapabilities.BlockAttributeInspection | CadHostCapabilities.DatabaseSnoop |
+            CadHostCapabilities.ZoomToObject | CadHostCapabilities.SelectInDrawing | CadHostCapabilities.DatabaseSearch |
+            CadHostCapabilities.TransientHighlight);
         private Document ActiveDocument => AcadApp.DocumentManager.MdiActiveDocument ?? throw new InvalidOperationException("No active drawing.");
 
         public CadDocumentInfo? GetActiveDocument()
@@ -29,6 +36,7 @@ namespace CADLookup.Host.AutoCAD
 
         public IReadOnlyList<CadObjectRef> SelectObjects(SelectionRequest request)
         {
+            LastSelectionWasCancelled = false;
             var document = ActiveDocument;
             var result = new List<CadObjectRef>();
             PromptSelectionResult? selection = null;
@@ -49,6 +57,7 @@ namespace CADLookup.Host.AutoCAD
                     AllowDuplicates = false
                 };
                 selection = document.Editor.GetSelection(promptOptions);
+                LastSelectionWasCancelled = selection.Status == PromptStatus.Cancel;
             }
             if (selection == null || selection.Status != PromptStatus.OK || selection.Value == null) return result;
             using (var transaction = document.Database.TransactionManager.StartOpenCloseTransaction())
@@ -73,6 +82,183 @@ namespace CADLookup.Host.AutoCAD
                     return ToReference(document, tr.GetObject(id, OpenMode.ForRead, true));
             }
             catch { return null; }
+        }
+
+        public IReadOnlyList<CadObjectRef> SearchObjects(SearchRequest request)
+        {
+            var document = ActiveDocument;
+            var result = new List<CadObjectRef>();
+            if (string.IsNullOrWhiteSpace(request.Query)) return result;
+            using (var transaction = document.Database.TransactionManager.StartOpenCloseTransaction())
+            {
+                foreach (var spaceId in GetSearchableSpaces(document.Database, transaction))
+                {
+                    if (result.Count >= request.MaxResults) break;
+                    var space = (BlockTableRecord)transaction.GetObject(spaceId, OpenMode.ForRead, true);
+                    foreach (ObjectId id in space)
+                    {
+                        if (result.Count >= request.MaxResults) break;
+                        DBObject obj;
+                        try { obj = transaction.GetObject(id, OpenMode.ForRead, true); }
+                        catch { continue; }
+                        if (obj is Entity entity && MatchesQuery(request.Query, entity, transaction))
+                            result.Add(ToReference(document, obj));
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static IEnumerable<ObjectId> GetSearchableSpaces(Database database, Transaction transaction)
+        {
+            var spaces = new List<ObjectId>();
+            if (!database.BlockTableId.IsNull)
+            {
+                var blockTable = (BlockTable)transaction.GetObject(database.BlockTableId, OpenMode.ForRead, true);
+                spaces.Add(blockTable[BlockTableRecord.ModelSpace]);
+            }
+            if (!database.CurrentSpaceId.IsNull && !spaces.Contains(database.CurrentSpaceId))
+                spaces.Add(database.CurrentSpaceId);
+            return spaces;
+        }
+
+        private static bool MatchesQuery(string query, Entity entity, Transaction transaction)
+        {
+            var fields = new List<string?>
+            {
+                entity.Handle.ToString(),
+                entity.GetType().Name,
+                entity.GetRXClass().DxfName,
+                entity.Layer
+            };
+            switch (entity)
+            {
+                case DBText text:
+                    fields.Add(text.TextString);
+                    break;
+                case MText mtext:
+                    fields.Add(mtext.Text);
+                    fields.Add(mtext.Contents);
+                    break;
+                case BlockReference blockReference:
+                    fields.Add(blockReference.Name);
+                    try
+                    {
+                        if (transaction.GetObject(blockReference.BlockTableRecord, OpenMode.ForRead, true) is BlockTableRecord definition)
+                            fields.Add(definition.Name);
+                    }
+                    catch { }
+                    foreach (ObjectId attributeId in blockReference.AttributeCollection)
+                    {
+                        try
+                        {
+                            if (transaction.GetObject(attributeId, OpenMode.ForRead, true) is AttributeReference attribute)
+                            {
+                                fields.Add(attribute.Tag);
+                                fields.Add(attribute.TextString);
+                            }
+                        }
+                        catch { }
+                    }
+                    break;
+            }
+            return TextMatcher.Matches(query, fields.ToArray());
+        }
+
+        public void ZoomToObject(CadObjectRef objectRef)
+        {
+            var document = ActiveDocument;
+            if (!string.Equals(objectRef.DocumentId, document.Name, StringComparison.OrdinalIgnoreCase)) return;
+            var id = document.Database.GetObjectId(false, new Handle(Convert.ToInt64(objectRef.Handle, 16)), 0);
+            if (id.IsNull) return;
+            using (var transaction = document.Database.TransactionManager.StartOpenCloseTransaction())
+            {
+                if (!(transaction.GetObject(id, OpenMode.ForRead, true) is Entity entity)) return;
+                Extents3d extents;
+                try { extents = entity.GeometricExtents; }
+                catch { return; }
+                var editor = document.Editor;
+                var width = extents.MaxPoint.X - extents.MinPoint.X;
+                var height = extents.MaxPoint.Y - extents.MinPoint.Y;
+                var margin = Math.Max(Math.Max(width, height) * 0.1, 1e-4);
+                extents.ExpandBy(new Vector3d(margin, margin, margin));
+                extents.TransformBy(editor.CurrentUserCoordinateSystem.Inverse());
+                var view = editor.GetCurrentView();
+                view.Width = extents.MaxPoint.X - extents.MinPoint.X;
+                view.Height = extents.MaxPoint.Y - extents.MinPoint.Y;
+                view.CenterPoint = new Point2d(
+                    (extents.MinPoint.X + extents.MaxPoint.X) / 2.0,
+                    (extents.MinPoint.Y + extents.MaxPoint.Y) / 2.0);
+                editor.SetCurrentView(view);
+            }
+        }
+
+        public void SelectInDrawing(CadObjectRef objectRef)
+        {
+            var document = ActiveDocument;
+            if (!string.Equals(objectRef.DocumentId, document.Name, StringComparison.OrdinalIgnoreCase)) return;
+            var id = document.Database.GetObjectId(false, new Handle(Convert.ToInt64(objectRef.Handle, 16)), 0);
+            if (id.IsNull) return;
+            document.Editor.SetImpliedSelection(new[] { id });
+        }
+
+        public void SetTransientHighlight(CadObjectRef? objectRef)
+        {
+            UnhighlightPrevious();
+            if (objectRef == null) return;
+            var document = ActiveDocument;
+            if (!string.Equals(objectRef.DocumentId, document.Name, StringComparison.OrdinalIgnoreCase)) return;
+            var id = document.Database.GetObjectId(false, new Handle(Convert.ToInt64(objectRef.Handle, 16)), 0);
+            if (id.IsNull) return;
+            using (var transaction = document.Database.TransactionManager.StartOpenCloseTransaction())
+            {
+                if (!(transaction.GetObject(id, OpenMode.ForRead, true) is Entity entity)) return;
+                if (!ApplyHighlight(entity, highlight: true)) return;
+                _highlightedDocumentName = document.Name;
+                _highlightedId = id;
+            }
+            try { document.Editor.UpdateScreen(); }
+            catch { }
+        }
+
+        private void UnhighlightPrevious()
+        {
+            var id = _highlightedId;
+            var documentName = _highlightedDocumentName;
+            _highlightedId = ObjectId.Null;
+            _highlightedDocumentName = null;
+            if (id.IsNull || documentName == null) return;
+            try
+            {
+                var document = ActiveDocument;
+                if (!string.Equals(documentName, document.Name, StringComparison.OrdinalIgnoreCase)) return;
+                using (var transaction = document.Database.TransactionManager.StartOpenCloseTransaction())
+                {
+                    if (transaction.GetObject(id, OpenMode.ForRead, true) is Entity entity)
+                        ApplyHighlight(entity, highlight: false);
+                }
+            }
+            catch { }
+        }
+
+        private static bool ApplyHighlight(Entity entity, bool highlight)
+        {
+            try
+            {
+                if (highlight) entity.Highlight(); else entity.Unhighlight();
+                return true;
+            }
+            catch
+            {
+                // Some hosts require write access for the highlight graphics flag.
+                try
+                {
+                    entity.UpgradeOpen();
+                    if (highlight) entity.Highlight(); else entity.Unhighlight();
+                    return true;
+                }
+                catch { return false; }
+            }
         }
 
         public IReadOnlyList<CadObjectRef> SnoopDatabase()
@@ -455,14 +641,133 @@ namespace CADLookup.Host.AutoCAD
                     }
                 }
                 var state = root.IsErased ? "Erased" : targetDbObject != null && targetDbObject.IsErased ? "Erased" : "Available";
+                var figures = ExtractFigures(entity);
                 return new CadObjectSnapshot(objectRef, value.GetType().FullName ?? value.GetType().Name,
-                    entity?.Layer ?? rootEntity?.Layer ?? "—", state, properties, geometry);
+                    entity?.Layer ?? rootEntity?.Layer ?? "—", state, properties, geometry, figures);
             }
         }
 
         private static CadObjectRef ToReference(Document document, DBObject obj) =>
             new CadObjectRef("AutoCAD", document.Name, obj.Handle.ToString(), obj.ObjectId.ToString(), obj.GetType().Name,
                 layer: (obj as Entity)?.Layer ?? string.Empty);
+
+        /// <summary>Extracts host-neutral drawable figures: exact curves where cheap, else the extents box.</summary>
+        private static List<GeometryFigure> ExtractFigures(Entity? entity)
+        {
+            var figures = new List<GeometryFigure>();
+            if (entity == null) return figures;
+            try
+            {
+                switch (entity)
+                {
+                    case Line line:
+                        figures.Add(PolylineFigure(new[] { line.StartPoint, line.EndPoint }, closed: false));
+                        break;
+                    case Circle circle:
+                        figures.Add(ApproximateArc(circle.Center, circle.Radius, 0.0, Math.PI * 2));
+                        break;
+                    case Arc arc:
+                        figures.Add(ApproximateArc(arc.Center, arc.Radius, arc.StartAngle, arc.EndAngle));
+                        break;
+                    case Ellipse ellipse:
+                        figures.Add(ApproximateEllipse(ellipse));
+                        break;
+                    case Polyline polyline when polyline.NumberOfVertices >= 2:
+                        {
+                            var points = new List<Point3d>(polyline.NumberOfVertices);
+                            for (var i = 0; i < polyline.NumberOfVertices; i++)
+                                points.Add(polyline.GetPoint3dAt(i));
+                            figures.Add(PolylineFigure(points, polyline.Closed));
+                            break;
+                        }
+                    case Spline spline:
+                        {
+                            var points = new List<Point3d>(49);
+                            var start = spline.StartParam;
+                            var end = spline.EndParam;
+                            for (var i = 0; i <= 48; i++)
+                                points.Add(spline.GetPointAtParameter(start + (end - start) * i / 48.0));
+                            figures.Add(PolylineFigure(points, spline.Closed));
+                            break;
+                        }
+                    case DBPoint point:
+                        figures.Add(new GeometryFigure(GeometryFigure.PointsKind, new[] { point.Position.X, point.Position.Y }));
+                        break;
+                }
+            }
+            catch { }
+            if (figures.Count == 0)
+            {
+                try
+                {
+                    var extents = entity.GeometricExtents;
+                    figures.Add(PolylineFigure(new[]
+                    {
+                        new Point3d(extents.MinPoint.X, extents.MinPoint.Y, 0),
+                        new Point3d(extents.MaxPoint.X, extents.MinPoint.Y, 0),
+                        new Point3d(extents.MaxPoint.X, extents.MaxPoint.Y, 0),
+                        new Point3d(extents.MinPoint.X, extents.MaxPoint.Y, 0)
+                    }, closed: true));
+                }
+                catch { }
+            }
+            return figures;
+        }
+
+        private static GeometryFigure PolylineFigure(IReadOnlyList<Point3d> points, bool closed)
+        {
+            var coordinates = new List<double>(points.Count * 2);
+            foreach (var point in points)
+            {
+                coordinates.Add(point.X);
+                coordinates.Add(point.Y);
+            }
+            return new GeometryFigure(GeometryFigure.PolylineKind, coordinates, closed);
+        }
+
+        private static GeometryFigure ApproximateArc(Point3d center, double radius, double startAngle, double endAngle)
+        {
+            var span = endAngle - startAngle;
+            if (span <= 0) span += Math.PI * 2;
+            const int steps = 48;
+            var points = new List<Point3d>(steps + 1);
+            for (var i = 0; i <= steps; i++)
+            {
+                var angle = startAngle + span * i / steps;
+                points.Add(new Point3d(center.X + radius * Math.Cos(angle), center.Y + radius * Math.Sin(angle), 0));
+            }
+            return new GeometryFigure(GeometryFigure.PolylineKind, Flatten(points), span >= Math.PI * 2 - 1e-9);
+        }
+
+        private static GeometryFigure ApproximateEllipse(Ellipse ellipse)
+        {
+            var start = ellipse.StartAngle;
+            var end = ellipse.EndAngle;
+            var span = end - start;
+            if (span <= 0) span += Math.PI * 2;
+            const int steps = 48;
+            var points = new List<Point3d>(steps + 1);
+            for (var i = 0; i <= steps; i++)
+            {
+                var t = start + span * i / steps;
+                points.Add(new Point3d(
+                    ellipse.Center.X + ellipse.MajorAxis.X * Math.Cos(t) + ellipse.MinorAxis.X * Math.Sin(t),
+                    ellipse.Center.Y + ellipse.MajorAxis.Y * Math.Cos(t) + ellipse.MinorAxis.Y * Math.Sin(t), 0));
+            }
+            return new GeometryFigure(GeometryFigure.PolylineKind, Flatten(points), span >= Math.PI * 2 - 1e-9);
+        }
+
+        private static List<double> Flatten(IReadOnlyList<Point3d> points)
+        {
+            var coordinates = new List<double>(points.Count * 2);
+            foreach (var point in points)
+            {
+                coordinates.Add(point.X);
+                coordinates.Add(point.Y);
+            }
+            return coordinates;
+        }
+
         private static CadProperty P(string name, string type, string value, string source) => new CadProperty(name, type, value, source);
         private static string FormatPoint(Point3d point) => string.Format(System.Globalization.CultureInfo.InvariantCulture, "X={0:G}, Y={1:G}, Z={2:G}", point.X, point.Y, point.Z);
     }

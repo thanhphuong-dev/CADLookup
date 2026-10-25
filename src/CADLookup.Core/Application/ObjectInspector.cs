@@ -20,7 +20,7 @@ namespace CADLookup.Core.Application
             if (snapshot.Properties.Count > properties.Count)
                 properties.Add(new CadProperty("…", "", "Additional properties omitted", "Inspector", PropertyStatus.Truncated));
             var boundedSnapshot = new CadObjectSnapshot(snapshot.Reference, snapshot.TypeName, snapshot.Layer,
-                snapshot.State, properties, snapshot.Geometry);
+                snapshot.State, properties, snapshot.Geometry, snapshot.Figures);
             return new ObjectInspectionResult(boundedSnapshot, properties);
         }
     }

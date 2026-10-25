@@ -1,0 +1,125 @@
+<Window x:Class="CADLookup.UI.Views.SearchDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:mvvm="clr-namespace:CADLookup.UI.Mvvm"
+        Title="CADLookup Search"
+        Width="680" Height="520"
+        MinWidth="540" MinHeight="380"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        FontFamily="Segoe UI">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <mvvm:BindingProxy x:Key="ViewModelProxy" Data="{Binding}" />
+
+            <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
+                <Setter Property="AutoGenerateColumns" Value="False" />
+                <Setter Property="CanUserAddRows" Value="False" />
+                <Setter Property="IsReadOnly" Value="True" />
+                <Setter Property="HeadersVisibility" Value="Column" />
+                <Setter Property="GridLinesVisibility" Value="Horizontal" />
+                <Setter Property="RowHeight" Value="30" />
+                <Setter Property="ColumnHeaderHeight" Value="32" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="EnableRowVirtualization" Value="True" />
+                <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+                <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Background="{DynamicResource BackgroundBrush}" Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Query row -->
+        <Grid Grid.Row="0" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <hc:SearchBar Height="34" Margin="0,0,8,0"
+                          Text="{Binding DatabaseSearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                          Style="{StaticResource SearchBarPlus}"
+                          ToolTip="{Binding Localization[SearchDrawingHint]}"
+                          hc:InfoElement.Placeholder="{Binding Localization[SearchPlaceholder]}"
+                          hc:InfoElement.ShowClearButton="True"
+                          Command="{Binding SearchExecuteCommand}" />
+            <Button Grid.Column="1" Content="{Binding Localization[SearchExecute]}" Command="{Binding SearchExecuteCommand}"
+                    Style="{StaticResource ButtonPrimary}" Height="34" Padding="18,0" />
+        </Grid>
+        <TextBlock Grid.Row="1" Text="{Binding Localization[SearchHint]}"
+                   Foreground="{DynamicResource SecondaryTextBrush}" FontSize="10" Margin="2,0,0,8" />
+
+        <!-- Results -->
+        <Grid Grid.Row="2">
+            <DataGrid x:Name="SearchResultsGrid" ItemsSource="{Binding SearchResults}" MouseDoubleClick="ResultDoubleClick" Background="Transparent">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{Binding Data.Localization[Type], Source={StaticResource ViewModelProxy}}" Binding="{Binding TypeName}" Width="1.3*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                                <Setter Property="Padding" Value="6,0" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="{Binding Data.Localization[Handle], Source={StaticResource ViewModelProxy}}" Binding="{Binding Handle}" Width="90">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontFamily" Value="Consolas" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                                <Setter Property="Padding" Value="6,0" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="{Binding Data.Localization[Layer], Source={StaticResource ViewModelProxy}}" Binding="{Binding Layer}" Width="1.3*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                                <Setter Property="Padding" Value="6,0" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <TextBlock Text="{Binding Localization[SearchEmpty]}" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasSearchResults}" Value="False">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
+        <!-- Status footer -->
+        <Grid Grid.Row="3" Margin="0,8,0,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource DarkPrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <TextBlock Text="{Binding Localization[SearchResultHint]}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="10" FontStyle="Italic" />
+        </Grid>
+    </Grid>
+</Window>

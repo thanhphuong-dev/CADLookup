@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <PlatformTarget>x64</PlatformTarget>
+    <VinaCADManagedDir Condition="'$(VinaCADManagedDir)' == ''">C:\Program Files\VinaCAD\VinaCAD 2026</VinaCADManagedDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CADLookup.Core\CADLookup.Core.csproj" />
+    <ProjectReference Include="..\CADLookup.UI\CADLookup.UI.csproj" />
+    <Reference Include="VinaCADCoreMgd_Net8">
+      <HintPath>$(VinaCADManagedDir)\VinaCADCoreMgd_Net8.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TD_Mgd_Net8_26.12_17">
+      <HintPath>$(VinaCADManagedDir)\TD_Mgd_Net8_26.12_17.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
